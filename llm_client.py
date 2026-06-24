@@ -183,7 +183,7 @@ def analyze_site(pages: list[dict], profession: str, device: str = "pc", custome
         pages_content=pages_content[:12000],
     )
 
-    text = _call_claude(SMART_MODEL, prompt, max_tokens=3000)
+    text = _call_claude(SMART_MODEL, prompt, max_tokens=6000)
     return _extract_json(text)
 
 
