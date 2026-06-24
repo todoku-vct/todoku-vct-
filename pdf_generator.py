@@ -436,6 +436,144 @@ class _Base(FPDF):
         self.drm_overview(mi)
         self.drm_axis(mi)
 
+    def brandz_section(self, bz: dict):
+        """BrandZ（Kantar）3軸スコアページ"""
+        if not bz:
+            return
+        lm = self.l_margin
+        self.section_bar("BrandZ スコア（Kantar ブランドエクイティ分析）")
+
+        axes = [
+            ("意味性  Meaningful", "顧客ニーズへの機能的・感情的適合度", "meaningful", (180, 140, 60)),
+            ("差別性  Different",  "競合との明確な差別化・唯一のポジション", "different",  (100, 140, 80)),
+            ("顕著性  Salient",    "想起容易性・AI検索（GEO）での発見可能性", "salient",   (80, 120, 180)),
+        ]
+
+        for label, sub, key, accent in axes:
+            data = bz.get(key, {})
+            score = int(data.get("score", 5)) if str(data.get("score", "5")).isdigit() else 5
+            comment = data.get("comment", "")
+
+            chars_per_line = 52
+            lines = max(1, -(-len(comment) // chars_per_line))
+            body_h = lines * 5.5 + 7
+            card_h = 14 + body_h
+
+            if (297 - self.get_y() - 22) < card_h + 4:
+                self.add_page()
+
+            y = self.get_y()
+            # カード背景
+            self.set_fill_color(248, 244, 234)
+            self.rect(lm, y, 180, card_h, style="F")
+            self.set_fill_color(*GOLD)
+            self.rect(lm, y, 180, 0.8, style="F")
+            self.set_fill_color(*accent)
+            self.rect(lm, y, 3, card_h, style="F")
+
+            # スコア円（右側）
+            cx = lm + 168
+            cy = y + card_h / 2
+            r = 7
+            self.set_fill_color(*accent)
+            self.ellipse(cx - r, cy - r, r * 2, r * 2, style="F")
+            self.set_font(self._font, "B", 9)
+            self.set_text_color(255, 255, 255)
+            self.set_xy(cx - r, cy - 3.5)
+            self.cell(r * 2, 7, str(score), align="C")
+
+            # ヘッダー
+            self.set_xy(lm + 7, y + 3)
+            self.set_font(self._font, "B", 9)
+            self.set_text_color(42, 36, 22)
+            self.cell(100, 5.5, label)
+            self.set_font(self._font, "", 6.5)
+            self.set_text_color(120, 110, 80)
+            self.set_xy(lm + 7, y + 8.5)
+            self.cell(150, 4, sub)
+
+            # 区切り線
+            self.set_fill_color(201, 169, 110)
+            self.rect(lm + 3, y + 13.5, 177, 0.3, style="F")
+
+            # コメント
+            self.set_auto_page_break(auto=False)
+            self.set_xy(lm + 8, y + 16)
+            self.set_font(self._font, "", 8.5)
+            self.set_text_color(22, 18, 10)
+            self.multi_cell(155, 5.5, comment)
+            self.set_auto_page_break(auto=True, margin=22)
+            self.set_y(y + card_h + 4)
+
+        # BrandZ総評
+        total_comment = bz.get("brandz_comment", "")
+        if total_comment:
+            y = self.get_y() + 2
+            self.set_fill_color(42, 36, 22)
+            self.rect(lm, y, 180, 0.8, style="F")
+            self.set_xy(lm, y + 4)
+            self.set_font(self._font, "B", 8.5)
+            self.set_text_color(*GOLD)
+            self.cell(20, 5, "総評")
+            self.set_font(self._font, "", 8.5)
+            self.set_text_color(22, 18, 10)
+            self.multi_cell(160, 5.5, total_comment)
+
+        self.set_text_color(0, 0, 0)
+
+    def geo_section(self, geo: dict):
+        """GEO（AI検索最適化）スコアセクション"""
+        if not geo:
+            return
+        lm = self.l_margin
+        self.ln(4)
+        self.section_bar("GEO スコア（AI検索最適化 / Generative Engine Optimization）")
+
+        score = int(geo.get("score", 5)) if str(geo.get("score", "5")).isdigit() else 5
+        issues = geo.get("issues", [])
+        actions = geo.get("actions", [])
+
+        y = self.get_y()
+        # スコアバッジ
+        self.set_fill_color(42, 36, 22)
+        self.rect(lm, y, 180, 16, style="F")
+        self.set_fill_color(*GOLD)
+        self.rect(lm, y, 3, 16, style="F")
+        self.set_font(self._font, "B", 10)
+        self.set_text_color(*GOLD)
+        self.set_xy(lm + 8, y + 4)
+        self.cell(60, 7, f"GEO スコア：{score} / 10")
+        self.set_font(self._font, "", 8)
+        self.set_text_color(220, 200, 150)
+        self.cell(110, 7, "ChatGPT・Gemini・ClaudeなどAIに推薦されやすさ")
+        self.set_y(y + 20)
+
+        # 問題点と改善アクション 2列
+        col_w = 86
+        for items, title, color in [
+            (issues, "AIに無視される原因", (185, 28, 28)),
+            (actions, "GEO改善アクション", (22, 120, 60)),
+        ]:
+            if not items:
+                continue
+            y = self.get_y()
+            self.set_fill_color(*color)
+            self.rect(lm, y, 180, 6, style="F")
+            self.set_font(self._font, "B", 8)
+            self.set_text_color(255, 255, 255)
+            self.set_xy(lm + 4, y + 1)
+            self.cell(180, 4, title)
+            self.set_y(y + 8)
+            for item in items[:3]:
+                self.set_xy(lm + 6, self.get_y())
+                self.set_font(self._font, "", 8.5)
+                self.set_text_color(22, 18, 10)
+                self.cell(4, 5.5, "•")
+                self.multi_cell(170, 5.5, str(item))
+            self.ln(2)
+
+        self.set_text_color(0, 0, 0)
+
     def persona_table(self, personas, reactions, mode):
         self.section_bar("仮想顧客ペルソナ一覧")
         lm = self.l_margin
@@ -1131,7 +1269,21 @@ def generate_site_pdf(
         pdf._fill_page_bottom()
 
     # ─────────────────────────────────────────────
-    # p.6  収集ページ一覧
+    # p.6  BrandZ + GEO スコア
+    # ─────────────────────────────────────────────
+    bz = site_report.get("brandz_score")
+    geo = site_report.get("geo_score")
+    if bz or geo:
+        pdf.add_page()
+        _meta_bar(pdf)
+        if bz:
+            pdf.brandz_section(bz)
+        if geo:
+            pdf.geo_section(geo)
+        pdf._fill_page_bottom()
+
+    # ─────────────────────────────────────────────
+    # p.7  収集ページ一覧
     # ─────────────────────────────────────────────
     pdf.add_page()
     _meta_bar(pdf)

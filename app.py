@@ -277,10 +277,10 @@ st.markdown("""
     <div class="txt-gold" style="font-size:0.6rem;letter-spacing:0.32em;text-transform:uppercase;margin-bottom:10px;font-weight:700;">LIFE DESIGN LAB</div>
     <b style="font-size:1.75rem;display:block;letter-spacing:-0.4px;line-height:1.15;">
       トドク VCT
-      <small class="txt-muted" style="font-size:0.88rem;font-weight:400;margin-left:10px;letter-spacing:0;">仮想顧客テスト</small>
+      <small class="txt-muted" style="font-size:0.88rem;font-weight:400;margin-left:10px;letter-spacing:0;">シンセティックデータ × マーケティング診断</small>
     </b>
     <small class="txt-sub" style="font-size:0.8rem;display:block;margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,0.15);">
-      LP・SNS投稿を公開前にAI仮想顧客でテスト
+      AIシンセティックデータで顧客反応を予測・サイトをBrandZ視点で診断
     </small>
   </div>
   <!-- 右：オフィス写真（テキストなし、装飾のみ） -->
