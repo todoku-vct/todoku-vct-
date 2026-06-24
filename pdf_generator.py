@@ -522,7 +522,7 @@ class _Base(FPDF):
         self.set_text_color(0, 0, 0)
 
     def geo_section(self, geo: dict):
-        """GEO（AI検索最適化）スコアセクション"""
+        """GEO（AI検索最適化）スコアセクション — 5ステップ＋11項目チェックリスト"""
         if not geo:
             return
         lm = self.l_margin
@@ -530,29 +530,87 @@ class _Base(FPDF):
         self.section_bar("GEO スコア（AI検索最適化 / Generative Engine Optimization）")
 
         score = int(geo.get("score", 5)) if str(geo.get("score", "5")).isdigit() else 5
-        issues = geo.get("issues", [])
-        actions = geo.get("actions", [])
 
+        # ── 総合スコアバー ──
         y = self.get_y()
-        # スコアバッジ
         self.set_fill_color(42, 36, 22)
-        self.rect(lm, y, 180, 16, style="F")
+        self.rect(lm, y, 180, 14, style="F")
         self.set_fill_color(*GOLD)
-        self.rect(lm, y, 3, 16, style="F")
+        self.rect(lm, y, 3, 14, style="F")
         self.set_font(self._font, "B", 10)
         self.set_text_color(*GOLD)
-        self.set_xy(lm + 8, y + 4)
-        self.cell(60, 7, f"GEO スコア：{score} / 10")
-        self.set_font(self._font, "", 8)
+        self.set_xy(lm + 8, y + 3.5)
+        self.cell(60, 6, f"GEO 総合スコア：{score} / 10")
+        self.set_font(self._font, "", 7.5)
         self.set_text_color(220, 200, 150)
-        self.cell(110, 7, "ChatGPT・Gemini・ClaudeなどAIに推薦されやすさ")
-        self.set_y(y + 20)
+        self.cell(110, 6, "AIに推薦・引用されやすさ（Kantar GEO対策基準）")
+        self.set_y(y + 17)
 
-        # 問題点と改善アクション 2列
-        col_w = 86
+        # ── 5ステップスコア ──
+        step_scores = geo.get("step_scores", {})
+        steps = [
+            ("S1 構造化", "step1_structure"),
+            ("S2 How to", "step2_howto"),
+            ("S3 Q&A",   "step3_qa"),
+            ("S4 比較表", "step4_comparison"),
+            ("S5 事例",  "step5_case"),
+        ]
+        if step_scores:
+            y = self.get_y()
+            self.set_fill_color(248, 244, 234)
+            self.rect(lm, y, 180, 18, style="F")
+            self.set_fill_color(*GOLD)
+            self.rect(lm, y, 180, 0.6, style="F")
+            self.set_font(self._font, "B", 7.5)
+            self.set_text_color(42, 36, 22)
+            self.set_xy(lm + 4, y + 3)
+            self.cell(180, 4, "GEO対策 5ステップ評価（各5点）")
+            col_w = 34
+            for i, (label, key) in enumerate(steps):
+                val = step_scores.get(key, "–")
+                cx = lm + 4 + i * col_w
+                self.set_xy(cx, y + 9)
+                self.set_font(self._font, "", 6.5)
+                self.set_text_color(80, 70, 50)
+                self.cell(col_w - 2, 4, label, align="C")
+                self.set_xy(cx, y + 13)
+                self.set_font(self._font, "B", 9)
+                self.set_text_color(42, 36, 22)
+                self.cell(col_w - 2, 4, f"{val} / 5", align="C")
+            self.set_y(y + 21)
+
+        # ── チェックリスト ──
+        ok_items = geo.get("checklist_ok", [])
+        ng_items = geo.get("checklist_missing", [])
+        if ok_items or ng_items:
+            y = self.get_y()
+            self.set_fill_color(248, 244, 234)
+            self.rect(lm, y, 180, 0.6, style="F")
+            self.set_y(y + 4)
+            self.set_font(self._font, "B", 7.5)
+            self.set_text_color(42, 36, 22)
+            self.set_x(lm + 4)
+            self.cell(80, 4, f"✅ 揃っている項目（{len(ok_items)}）")
+            self.set_x(lm + 94)
+            self.cell(80, 4, f"❌ 不足している項目（{len(ng_items)}）")
+            self.ln(5)
+            max_rows = max(len(ok_items), len(ng_items))
+            for i in range(min(max_rows, 6)):
+                self.set_font(self._font, "", 8)
+                self.set_x(lm + 4)
+                ok = ok_items[i] if i < len(ok_items) else ""
+                ng = ng_items[i] if i < len(ng_items) else ""
+                self.set_text_color(22, 100, 50)
+                self.cell(86, 5, f"  ✅ {ok}" if ok else "")
+                self.set_text_color(160, 30, 30)
+                self.cell(86, 5, f"  ❌ {ng}" if ng else "")
+                self.ln(5)
+            self.ln(2)
+
+        # ── 原因と改善アクション ──
         for items, title, color in [
-            (issues, "AIに無視される原因", (185, 28, 28)),
-            (actions, "GEO改善アクション", (22, 120, 60)),
+            (geo.get("issues", []), "AIに無視される原因", (185, 28, 28)),
+            (geo.get("actions", []), "最優先 GEO改善アクション", (22, 120, 60)),
         ]:
             if not items:
                 continue
