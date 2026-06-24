@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 import anthropic
@@ -11,7 +12,7 @@ load_dotenv()
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 FAST_MODEL = "claude-haiku-4-5-20251001"   # ペルソナ反応（安い・速い）
-SMART_MODEL = "claude-opus-4-8"             # レポート生成（高品質）
+SMART_MODEL = "claude-sonnet-4-6"           # レポート生成（高品質・安定）
 
 
 def _load_prompt(filename: str) -> str:
@@ -38,15 +39,21 @@ def _extract_json(text: str) -> dict:
 
 def _call_claude(model: str, prompt: str, max_tokens: int) -> str:
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    try:
-        response = client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.content[0].text
-    except anthropic.APIError as e:
-        raise RuntimeError(f"Claude API エラー: {e}") from e
+    for attempt in range(3):
+        try:
+            response = client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.content[0].text
+        except anthropic.RateLimitError:
+            if attempt < 2:
+                time.sleep(10 * (attempt + 1))
+            else:
+                raise RuntimeError("APIが混雑しています。しばらく待ってから再試行してください。") from None
+        except anthropic.APIError as e:
+            raise RuntimeError(f"Claude API エラー: {e}") from e
 
 
 def get_persona_reaction(persona: dict, lp_text: str, mode: str = "lp") -> dict:
