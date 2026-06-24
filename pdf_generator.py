@@ -531,16 +531,19 @@ class _Base(FPDF):
             self.set_fill_color(*accent)
             self.rect(lm, y, 3, card_h, style="F")
 
-            # スコア円（右側）
-            cx = lm + 168
-            cy = y + card_h / 2
-            r = 7
+            # スコアバッジ（右側 — 大きめの円 + /10表記）
+            cx = lm + 171
+            cy = y + card_h / 2 - 3
+            r = 10
             self.set_fill_color(*accent)
             self.ellipse(cx - r, cy - r, r * 2, r * 2, style="F")
-            self.set_font(self._font, "B", 9)
+            self.set_font(self._font, "B", 13)
             self.set_text_color(255, 255, 255)
-            self.set_xy(cx - r, cy - 3.5)
-            self.cell(r * 2, 7, str(score), align="C")
+            self.set_xy(cx - r, cy - 5)
+            self.cell(r * 2, 8, str(score), align="C")
+            self.set_xy(cx - r, cy + 3)
+            self.set_font(self._font, "", 6)
+            self.cell(r * 2, 4, "/10", align="C")
 
             # ヘッダー
             self.set_xy(lm + 7, y + 3)
@@ -556,12 +559,12 @@ class _Base(FPDF):
             self.set_fill_color(201, 169, 110)
             self.rect(lm + 3, y + 13.5, 177, 0.3, style="F")
 
-            # コメント
+            # コメント（スコア円と重ならないよう幅を調整）
             self.set_auto_page_break(auto=False)
             self.set_xy(lm + 8, y + 16)
             self.set_font(self._font, "", 8.5)
             self.set_text_color(22, 18, 10)
-            self.multi_cell(155, 5.5, comment)
+            self.multi_cell(148, 5.5, comment)
             self.set_auto_page_break(auto=True, margin=22)
             self.set_y(y + card_h + 4)
 
@@ -639,33 +642,40 @@ class _Base(FPDF):
                 self.cell(col_w - 2, 4, f"{val} / 5", align="C")
             self.set_y(y + 21)
 
-        # ── チェックリスト ──
+        # ── チェックリスト（縦並び：切れ防止） ──
         ok_items = geo.get("checklist_ok", [])
         ng_items = geo.get("checklist_missing", [])
         if ok_items or ng_items:
             y = self.get_y()
             self.set_fill_color(248, 244, 234)
             self.rect(lm, y, 180, 0.6, style="F")
-            self.set_y(y + 4)
-            self.set_font(self._font, "B", 7.5)
-            self.set_text_color(42, 36, 22)
-            self.set_x(lm + 4)
-            self.cell(80, 4, f"✅ 揃っている項目（{len(ok_items)}）")
-            self.set_x(lm + 94)
-            self.cell(80, 4, f"❌ 不足している項目（{len(ng_items)}）")
-            self.ln(5)
-            max_rows = max(len(ok_items), len(ng_items))
-            for i in range(min(max_rows, 6)):
-                self.set_font(self._font, "", 8)
+            self.set_y(y + 3)
+            # ✅ 揃っている項目
+            if ok_items:
                 self.set_x(lm + 4)
-                ok = ok_items[i] if i < len(ok_items) else ""
-                ng = ng_items[i] if i < len(ng_items) else ""
-                self.set_text_color(22, 100, 50)
-                self.cell(86, 5, f"  ✅ {ok}" if ok else "")
-                self.set_text_color(160, 30, 30)
-                self.cell(86, 5, f"  ❌ {ng}" if ng else "")
+                self.set_font(self._font, "B", 7.5)
+                self.set_text_color(22, 80, 40)
+                self.cell(176, 4.5, f"✅ 揃っている項目（{len(ok_items)}）")
                 self.ln(5)
+                for ok in ok_items[:6]:
+                    self.set_x(lm + 8)
+                    self.set_font(self._font, "", 8)
+                    self.set_text_color(22, 100, 50)
+                    self.multi_cell(172, 4.5, f"✅ {ok}")
             self.ln(2)
+            # ❌ 不足している項目
+            if ng_items:
+                self.set_x(lm + 4)
+                self.set_font(self._font, "B", 7.5)
+                self.set_text_color(140, 20, 20)
+                self.cell(176, 4.5, f"❌ 不足している項目（{len(ng_items)}）")
+                self.ln(5)
+                for ng in ng_items[:6]:
+                    self.set_x(lm + 8)
+                    self.set_font(self._font, "", 8)
+                    self.set_text_color(160, 30, 30)
+                    self.multi_cell(172, 4.5, f"❌ {ng}")
+            self.ln(3)
 
         # ── 原因と改善アクション ──
         for items, title, color in [
@@ -1039,7 +1049,7 @@ class _SitePDF(_Base):
         self.set_text_color(0, 0, 0)
 
     def guide_page(self):
-        """各スコア・指標の見方を解説するガイドページ。"""
+        """各スコア・指標の見方を解説するガイドページ（1ページ収録）。"""
         self.add_page()
         lm = self.l_margin
         self.section_bar("このレポートの見方 — 各指標・スコアガイド")
@@ -1047,77 +1057,63 @@ class _SitePDF(_Base):
         guides = [
             (
                 "推定問い合わせ率",
-                "仮想顧客10人が「問い合わせする・しない・迷う」を判定した割合です。\n"
-                "目安: 15%以上=高水準（広告投下タイミング） / 8〜14%=標準 / 7%以下=要改善",
+                "仮想顧客10人が「問い合わせする・しない・迷う」を判定した割合。15%以上=高水準 / 8〜14%=標準 / 7%以下=要改善",
                 (22, 120, 60),
             ),
             (
                 "AI 総合パワースコア（/100）",
-                "DRM・BrandZ・GEOの3軸を統合した総合点（DRM:30点 + BrandZ:40点 + GEO:30点）。\n"
-                "80点以上=今すぐ広告投下可能 / 60〜79点=1〜2項目改善で大幅アップ / 40〜59点=中程度の改善が必要 / 39点以下=抜本的な見直しが必要",
+                "DRM(30点)+BrandZ(40点)+GEO(30点)を統合した総合点。80点以上=広告投下タイミング / 60〜79=改善で伸びる / 59以下=要見直し",
                 (180, 140, 20),
             ),
             (
                 "DRMスコア（A〜D）",
-                "集客→教育→販売の導線設計の総合評価。\n"
-                "A=すべて機能・広告投下タイミング / B=1〜2か所改善で大幅アップ / C=構造的問題あり・改善が先 / D=根本から見直しが必要",
+                "集客→教育→販売の導線設計の評価。A=すべて機能 / B=1〜2か所改善で大幅アップ / C=構造問題あり / D=根本見直し",
                 BLUE_MID,
             ),
             (
                 "BrandZ 3軸スコア（各/10）",
-                "意味性=顧客の悩みに機能的・感情的に応えているか / 差別性=競合と明確に違うか / 顕著性=問題発生時に真っ先に思い出されるか（AI推薦含む）。\n"
-                "3軸すべてが高いほどブランドとして選ばれ続ける。1軸でも低いと集客効果が落ちる。",
+                "意味性=悩みに応えているか / 差別性=競合と違うか / 顕著性=真っ先に思い出されるか。3軸揃ってブランドパワーになる",
                 (100, 140, 80),
             ),
             (
                 "GEO総合スコア（/10）",
-                "ChatGPT・Gemini・ClaudeなどのAIに「おすすめ」として推薦・引用されやすいかの評価（Kantar基準）。\n"
-                "7以上=AIに引用されやすい / 4〜6=部分的に対応 / 3以下=AIにほぼ無視される状態",
+                "ChatGPT・Gemini・ClaudeなどのAIに推薦・引用されやすいかの評価。7以上=AI引用されやすい / 3以下=AIに無視される状態",
                 (80, 120, 180),
             ),
             (
                 "GEO 5ステップ評価（各/5）",
-                "S1構造化: 数字・ファクトで情報を整理できているか\n"
-                "S2 How to: 方法・手順・注意点系のコンテンツがあるか\n"
-                "S3 Q&A: 向いている人・向いていない人が明記されているか\n"
-                "S4比較表: 自社・他社比較表が実装されているか\n"
-                "S5事例: 誰が・何の悩みで・どう変化したかの数字入り事例があるか",
+                "S1構造化=数字・ファクト整理 / S2 How to=方法・手順コンテンツ / S3 Q&A=向いている人・いない人明記 / S4比較表=自社他社比較 / S5事例=数字入りビフォーアフター",
                 (80, 120, 180),
             ),
             (
-                "11項目チェックリスト（AIに評価されるための必須要素）",
-                "①誰向けの商品か ②何の悩みを解決するか ③他社と何が違うか ④料金はいくらか ⑤対応エリア "
-                "⑥利用までの流れ ⑦よくある質問 ⑧向いている人 ⑨向いていない人 ⑩お客様の声 ⑪事例 ⑫専門性の根拠。\n"
-                "不足している項目から順に追加すると、AIに「専門家」と認識されやすくなります。",
+                "11項目チェックリスト（AI必須要素）",
+                "①誰向け ②悩み解決 ③他社差 ④料金 ⑤対応エリア ⑥利用の流れ ⑦よくある質問 ⑧向いている人 ⑨向いていない人 ⑩お客様の声 ⑪事例 ⑫専門性の根拠。不足項目から順に追加するとAIに評価されやすくなる",
                 (80, 120, 180),
             ),
         ]
 
         for title, body, accent in guides:
-            _b_lines = max(2, -(-len(body) // 44))
-            card_h = 13 + _b_lines * 5 + 6
-            if (297 - self.get_y() - 22) < card_h + 4:
-                self.add_page()
             y = self.get_y()
+            card_h = 19 + max(1, -(-len(body) // 50)) * 4.2 + 2
             self.set_fill_color(248, 244, 234)
             self.rect(lm, y, 180, card_h, style="F")
             self.set_fill_color(*accent)
             self.rect(lm, y, 3, card_h, style="F")
             self.set_fill_color(*GOLD)
-            self.rect(lm, y, 180, 0.6, style="F")
-            self.set_xy(lm + 7, y + 3)
-            self.set_font(self._font, "B", 9)
+            self.rect(lm, y, 180, 0.5, style="F")
+            self.set_xy(lm + 7, y + 2.5)
+            self.set_font(self._font, "B", 8.5)
             self.set_text_color(42, 36, 22)
-            self.cell(170, 5.5, title)
+            self.cell(168, 5, title)
             self.set_fill_color(201, 169, 110)
-            self.rect(lm + 3, y + 11, 177, 0.3, style="F")
-            self.set_xy(lm + 8, y + 14)
-            self.set_font(self._font, "", 8.5)
+            self.rect(lm + 3, y + 9.5, 177, 0.3, style="F")
+            self.set_xy(lm + 7, y + 11.5)
+            self.set_font(self._font, "", 7.5)
             self.set_text_color(22, 18, 10)
             self.set_auto_page_break(auto=False)
-            self.multi_cell(168, 5, body)
+            self.multi_cell(170, 4.2, body)
             self.set_auto_page_break(auto=True, margin=22)
-            self.set_y(y + card_h + 4)
+            self.set_y(y + card_h + 2)
 
         self.set_text_color(0, 0, 0)
         self._final_footer()
@@ -1459,10 +1455,16 @@ def generate_site_pdf(
 
     missing = site_report.get("missing_pages", [])
     if missing:
+        if (297 - pdf.get_y() - 22) < 40:
+            pdf.add_page()
+            _meta_bar(pdf)
         pdf.section_bar("あると効果的なページ（現在なし）")
         for m in missing[:6]:
             _m_lines = max(1, -(-len(m) // 46))
             _m_h = max(13, _m_lines * 5.5 + 8)
+            if (297 - pdf.get_y() - 22) < _m_h + 5:
+                pdf.add_page()
+                _meta_bar(pdf)
             y_m = pdf.get_y()
             pdf.set_fill_color(248, 244, 234)
             pdf.rect(lm, y_m, 180, _m_h, style="F")
@@ -1471,9 +1473,7 @@ def generate_site_pdf(
             pdf.set_xy(lm + 8, y_m + 4)
             pdf.set_font(pdf._font, "B", 9)
             pdf.set_text_color(22, 18, 10)
-            pdf.set_auto_page_break(auto=False)
             pdf.multi_cell(168, 5.5, f"◆  {m}")
-            pdf.set_auto_page_break(auto=True, margin=22)
             pdf.set_y(y_m + _m_h + 3)
         pdf.set_text_color(0, 0, 0)
 
