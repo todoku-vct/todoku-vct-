@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>トドク｜士業事務所専門 集客支援サービス</title>
+  <style>
+    :root {
+      --navy: #1a1a3e;
+      --navy-mid: #2d2d5e;
+      --purple: #6b46c1;
+      --purple-light: #7c3aed;
+      --gold: #d4a843;
+      --gold-light: #f0c060;
+      --white: #ffffff;
+      --off-white: #f7f8fc;
+      --gray: #6b7280;
+      --gray-light: #e5e7eb;
+      --green: #16a34a;
+      --red: #dc2626;
+      --text: #1a1a3e;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      color: var(--text);
+      background: var(--white);
+      line-height: 1.8;
+    }
+
+    /* ── UTILITY ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 80px 0; }
+    .section-alt { background: var(--off-white); }
+    .section-dark { background: var(--navy); color: var(--white); }
+    .section-title {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 48px;
+      line-height: 1.4;
+    }
+    .section-title span { color: var(--gold); }
+    .tag {
+      display: inline-block;
+      background: var(--purple);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      letter-spacing: 0.05em;
+    }
+    .cta-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--navy);
+      font-size: 1.15rem;
+      font-weight: 900;
+      padding: 18px 48px;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 6px 24px rgba(212,168,67,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(212,168,67,0.5); }
+    .cta-sub { font-size: 0.82rem; color: var(--gray); margin-top: 10px; }
+
+    /* ── STICKY NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(26,26,62,0.97);
+      backdrop-filter: blur(8px);
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { color: white; font-weight: 900; font-size: 1.1rem; letter-spacing: 0.05em; }
+    .nav-logo span { color: var(--gold); }
+    .nav-cta {
+      background: var(--gold);
+      color: var(--navy);
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 8px 20px;
+      border-radius: 20px;
+      text-decoration: none;
+    }
+
+    /* ── HERO ── */
+    #hero {
+      background: linear-gradient(160deg, #0d0d28 0%, #1a1a3e 50%, #2d1b6e 100%);
+      padding: 100px 0 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 50%, rgba(107,70,193,0.2) 0%, transparent 60%);
+    }
+    .hero-tag {
+      display: inline-block;
+      border: 1px solid rgba(212,168,67,0.5);
+      color: var(--gold);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 18px;
+      border-radius: 20px;
+      margin-bottom: 28px;
+      letter-spacing: 0.1em;
+    }
+    .hero-catch {
+      font-size: clamp(1.9rem, 5vw, 3.2rem);
+      font-weight: 900;
+      color: white;
+      line-height: 1.35;
+      margin-bottom: 24px;
+    }
+    .hero-catch em { color: var(--gold); font-style: normal; }
+    .hero-sub {
+      font-size: clamp(0.95rem, 2vw, 1.1rem);
+      color: rgba(255,255,255,0.75);
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.9;
+    }
+    .hero-proof {
+      display: flex; justify-content: center; gap: 40px;
+      margin-top: 56px;
+      flex-wrap: wrap;
+    }
+    .hero-proof-item { text-align: center; color: white; }
+    .hero-proof-num { font-size: 2.2rem; font-weight: 900; color: var(--gold); line-height: 1; }
+    .hero-proof-label { font-size: 0.78rem; color: rgba(255,255,255,0.6); margin-top: 4px; }
+
+    /* ── SECTION 1: 共感 ── */
+    .pain-list { list-style: none; max-width: 620px; margin: 0 auto 40px; }
+    .pain-list li {
+      background: white;
+      border-left: 4px solid var(--red);
+      border-radius: 0 10px 10px 0;
+      padding: 14px 20px;
+      margin-bottom: 12px;
+      font-size: 0.98rem;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .pain-list li::before { content: '✗ '; color: var(--red); }
+    .empathy-box {
+      background: linear-gradient(135deg, var(--navy), var(--navy-mid));
+      color: white;
+      border-radius: 16px;
+      padding: 32px 36px;
+      max-width: 620px;
+      margin: 0 auto;
+      text-align: center;
+      line-height: 2;
+    }
+    .empathy-box strong { color: var(--gold); font-size: 1.1rem; }
+
+    /* ── SECTION 2: 犯人 ── */
+    .mistake-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+    .mistake-card {
+      border: 2px solid var(--gray-light);
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+    }
+    .mistake-card .x-mark {
+      font-size: 2rem;
+      position: absolute; top: -16px; left: 20px;
+      background: white; padding: 0 6px;
+    }
+    .mistake-card h4 { font-size: 0.92rem; color: var(--red); margin-bottom: 8px; font-weight: 800; }
+    .mistake-card p { font-size: 0.88rem; color: var(--gray); }
+    .solution-box {
+      background: linear-gradient(135deg, #f0e6ff, #e8d5ff);
+      border: 2px solid var(--purple);
+      border-radius: 16px;
+      padding: 36px;
+      text-align: center;
+    }
+    .solution-box h3 { font-size: 1.3rem; font-weight: 900; color: var(--purple); margin-bottom: 16px; }
+    .solution-box p { color: var(--navy); line-height: 2; }
+    .flow-steps {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-top: 24px; flex-wrap: wrap;
+    }
+    .flow-step {
+      background: var(--purple);
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+    .flow-arrow { font-size: 1.4rem; color: var(--purple); font-weight: 900; }
+
+    /* ── SECTION 3: 差別化 ── */
+    .diff-table {
+      width: 100%; border-collapse: collapse;
+      margin-bottom: 40px;
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .diff-table th {
+      padding: 16px; font-size: 0.88rem; font-weight: 800;
+    }
+    .diff-table th:first-child { background: #f1f5f9; color: var(--gray); }
+    .diff-table th:nth-child(2) { background: #fee2e2; color: var(--red); }
+    .diff-table th:last-child { background: var(--navy); color: var(--gold); }
+    .diff-table td {
+      padding: 14px 16px; font-size: 0.88rem; text-align: center;
+      border-bottom: 1px solid var(--gray-light);
+    }
+    .diff-table td:first-child { text-align: left; font-weight: 700; color: var(--navy); }
+    .diff-table td:last-child { background: rgba(107,70,193,0.05); font-weight: 700; color: var(--purple); }
+    .vct-steps {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 20px; margin-top: 40px;
+    }
+    @media(max-width: 600px) { .vct-steps { grid-template-columns: 1fr; } }
+    .vct-step {
+      border-radius: 16px; padding: 28px 20px; text-align: center;
+      position: relative;
+    }
+    .vct-step:nth-child(1) { background: linear-gradient(135deg, #1a1a3e, #2d1b6e); color: white; }
+    .vct-step:nth-child(2) { background: linear-gradient(135deg, #2d1b6e, #6b46c1); color: white; }
+    .vct-step:nth-child(3) { background: linear-gradient(135deg, #6b46c1, #d4a843); color: white; }
+    .vct-step-num { font-size: 2rem; font-weight: 900; opacity: 0.4; margin-bottom: 8px; }
+    .vct-step h4 { font-size: 1rem; font-weight: 800; margin-bottom: 10px; }
+    .vct-step p { font-size: 0.82rem; opacity: 0.85; line-height: 1.7; }
+
+    /* ── SECTION 4: 実績 ── */
+    .case-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 40px; }
+    .case-card {
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    .case-header { background: var(--navy); color: white; padding: 16px 20px; font-size: 0.88rem; font-weight: 700; }
+    .case-body { background: white; padding: 20px; }
+    .case-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+    .case-label {
+      font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 4px;
+      white-space: nowrap;
+    }
+    .case-before { background: #fee2e2; color: var(--red); }
+    .case-after { background: #dcfce7; color: var(--green); }
+    .case-find { background: #fef3c7; color: #92400e; }
+    .case-text { font-size: 0.88rem; color: var(--navy); font-weight: 600; }
+    .testimonial {
+      background: linear-gradient(135deg, var(--off-white), white);
+      border-left: 4px solid var(--gold);
+      border-radius: 0 16px 16px 0;
+      padding: 28px 32px;
+      font-size: 0.95rem;
+      line-height: 2;
+      color: var(--navy);
+      font-style: italic;
+    }
+    .testimonial cite { font-style: normal; font-size: 0.82rem; color: var(--gray); display: block; margin-top: 12px; }
+
+    /* ── SECTION 5: サービス内容 ── */
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .service-card {
+      background: white;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border-top: 4px solid var(--purple);
+      transition: transform 0.2s;
+    }
+    .service-card:hover { transform: translateY(-4px); }
+    .service-icon { font-size: 1.8rem; margin-bottom: 12px; }
+    .service-card h4 { font-size: 0.95rem; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+    .service-card p { font-size: 0.82rem; color: var(--gray); line-height: 1.7; }
+
+    /* ── SECTION 6: 限定 ── */
+    .urgency-box {
+      background: linear-gradient(135deg, #1a1a3e, #2d1b6e);
+      border-radius: 20px;
+      padding: 48px 40px;
+      text-align: center;
+      color: white;
+    }
+    .urgency-box h3 { font-size: 1.6rem; font-weight: 900; margin-bottom: 20px; }
+    .urgency-box h3 span { color: var(--gold); }
+    .urgency-box p { color: rgba(255,255,255,0.8); line-height: 2; margin-bottom: 24px; }
+    .urgency-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      font-size: 0.88rem;
+      font-weight: 900;
+      padding: 8px 24px;
+      border-radius: 20px;
+      margin-bottom: 32px;
+    }
+
+    /* ── SECTION 7: FAQ ── */
+    .faq-list { max-width: 680px; margin: 0 auto; }
+    .faq-item {
+      border-bottom: 1px solid var(--gray-light);
+      padding: 24px 0;
+    }
+    .faq-q {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 12px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .faq-q::before {
+      content: 'Q';
+      background: var(--purple);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 900;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .faq-a {
+      font-size: 0.9rem;
+      color: var(--gray);
+      line-height: 1.9;
+      padding-left: 36px;
+    }
+
+    /* ── FINAL CTA ── */
+    #final-cta {
+      background: linear-gradient(135deg, #0d0d28, #1a1a3e);
+      padding: 100px 0;
+      text-align: center;
+      color: white;
+    }
+    #final-cta h2 { font-size: clamp(1.5rem, 3vw, 2.4rem); font-weight: 900; margin-bottom: 16px; }
+    #final-cta h2 span { color: var(--gold); }
+    #final-cta p { color: rgba(255,255,255,0.7); margin-bottom: 40px; font-size: 1rem; line-height: 2; }
+    .limit-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(212,168,67,0.15);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-size: 0.82rem; font-weight: 700;
+      padding: 8px 20px; border-radius: 20px;
+      margin-bottom: 28px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #0a0a1e;
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      padding: 32px;
+      font-size: 0.78rem;
+    }
+    footer a { color: rgba(255,255,255,0.5); text-decoration: none; }
+
+    /* ── ANIMATIONS ── */
+    .fade-in {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width: 600px) {
+      .section { padding: 60px 0; }
+      .hero-proof { gap: 24px; }
+      .vct-steps { grid-template-columns: 1fr; }
+      .diff-table { font-size: 0.78rem; }
+      .urgency-box { padding: 32px 20px; }
+      nav { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">トドク<span>.</span></div>
+  <a href="#final-cta" class="nav-cta">無料相談する →</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-tag">士業事務所専門 集客支援サービス</div>
+    <h1 class="hero-catch fade-in">
+      LP・SNS・ホームページを<br>
+      「<em>出す前に直す</em>」から、<br>
+      問い合わせが来る。
+    </h1>
+    <p class="hero-sub fade-in">
+      広告をかける前に、公開する前に、やるべきことがあります。<br>
+      トドクは「公開前テスト → 改善 → 発信」の仕組みで<br>
+      士業事務所の集客を根本から変えます。
+    </p>
+    <a href="#final-cta" class="cta-btn fade-in">トドクに無料相談する →</a>
+    <p class="cta-sub fade-in">※ 現在、新規受付は月3社限定です</p>
+    <div class="hero-proof fade-in">
+      <div class="hero-proof-item">
+        <div class="hero-proof-num">3分</div>
+        <div class="hero-proof-label">で発信の"穴"を発見</div>
+      </div>
+      <div class="hero-proof-item">
+        <div class="hero-proof-num">¥0</div>
+        <div class="hero-proof-label">広告費ゼロで改善できる</div>
+      </div>
+      <div class="hero-proof-item">
+        <div class="hero-proof-num">7×</div>
+        <div class="hero-proof-label">エンゲージメント改善事例</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 1: 共感 -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="tag">こんなことで悩んでいませんか？</div>
+    <h2 class="section-title">多くの士業事務所が<br><span>同じ壁</span>にぶつかっています</h2>
+    <ul class="pain-list fade-in">
+      <li>ホームページを作ったのに、問い合わせが月0〜1件のまま</li>
+      <li>SNSを頑張って投稿しているのに、全然フォロワーが増えない</li>
+      <li>広告をかけようとしているが、今の文章で大丈夫か不安</li>
+      <li>制作会社に頼んで作ったのに、なんか刺さっていない気がする</li>
+      <li>何を・どう直せばいいのか、そもそもわからない</li>
+    </ul>
+    <div class="empathy-box fade-in">
+      それ、あなただけじゃないです。<br><br>
+      <strong>原因は「腕が悪いから」でも「サービスが良くないから」でもない。</strong><br>
+      「届いていないから」です。
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: 犯人と解決策 -->
+<section class="section">
+  <div class="container">
+    <div class="tag">なぜうまくいかないのか</div>
+    <h2 class="section-title">よくある3つの<span>間違い</span></h2>
+    <div class="mistake-grid fade-in">
+      <div class="mistake-card">
+        <div class="x-mark">✗</div>
+        <h4>間違い①「デザインをよくすれば解決する」</h4>
+        <p>デザインは入口に過ぎません。問題は文章と構造です。いくら見た目を整えても、刺さらない言葉は届きません。</p>
+      </div>
+      <div class="mistake-card">
+        <div class="x-mark">✗</div>
+        <h4>間違い②「もっと頻繁に投稿すれば届く」</h4>
+        <p>届かない文章を100回出しても届きません。量より前に、質と方向性を確かめることが先決です。</p>
+      </div>
+      <div class="mistake-card">
+        <div class="x-mark">✗</div>
+        <h4>間違い③「広告をかければ解決する」</h4>
+        <p>穴の空いたバケツに水を注いでいるだけです。文章が刺さらない状態で広告費をかけると損失が加速します。</p>
+      </div>
+    </div>
+    <div class="solution-box fade-in">
+      <h3>集客が先。商品は後。<br>でも集客より先にやることがある。</h3>
+      <p>
+        「その文章が、相手に届くかどうか」の確認です。<br><br>
+        プロ野球選手はシーズン前に練習試合をします。<br>
+        なぜ士業の先生は、LP公開前にテストをしないのか。<br><br>
+        トドクは「発信する前に問題を発見・改善する」仕組みで<br>士業事務所の集客を根本から変えます。
+      </p>
+      <div class="flow-steps">
+        <div class="flow-step">テスト</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">改善</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">発信</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: 差別化 -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="tag">なぜトドクだけが結果を出せるのか</div>
+    <h2 class="section-title">9割の事務所がやっていない<br><span>「公開前テスト」</span>という武器</h2>
+    <table class="diff-table fade-in">
+      <thead>
+        <tr>
+          <th></th>
+          <th>一般的な支援</th>
+          <th>トドク</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>LP・コピーの改善</td>
+          <td>作って公開して様子見</td>
+          <td>公開前に問題を特定</td>
+        </tr>
+        <tr>
+          <td>改善の根拠</td>
+          <td>担当者の経験・感覚</td>
+          <td>AI仮想顧客のデータ</td>
+        </tr>
+        <tr>
+          <td>改善サイクル</td>
+          <td>数週間〜数ヶ月</td>
+          <td>3分で仮説検証</td>
+        </tr>
+        <tr>
+          <td>広告費のリスク</td>
+          <td>出してみないとわからない</td>
+          <td>事前に穴を塞いでから出す</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="vct-steps fade-in">
+      <div class="vct-step">
+        <div class="vct-step-num">01</div>
+        <h4>INPUT</h4>
+        <p>LP文章・SNS投稿・セールスコピーをペーストするだけ</p>
+      </div>
+      <div class="vct-step">
+        <div class="vct-step-num">02</div>
+        <h4>TEST</h4>
+        <p>AI仮想顧客（年代・職業・悩み別）がリアルに反応・評価</p>
+      </div>
+      <div class="vct-step">
+        <div class="vct-step-num">03</div>
+        <h4>REPORT</h4>
+        <p>改善レポート・DRMスコア・改善版コピーが自動生成</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: 実績 -->
+<section class="section">
+  <div class="container">
+    <div class="tag">仕組みは再現できる。その証拠。</div>
+    <h2 class="section-title">Before / <span>After</span> 事例</h2>
+    <div class="case-grid fade-in">
+      <div class="case-card">
+        <div class="case-header">🏢 行政書士 A先生（東京）</div>
+        <div class="case-body">
+          <div class="case-row">
+            <span class="case-label case-before">BEFORE</span>
+            <span class="case-text">問い合わせ 月1〜2件</span>
+          </div>
+          <div class="case-row">
+            <span class="case-label case-find">発見した問題</span>
+            <span class="case-text">料金が見えない・実績の見せ方が弱い</span>
+          </div>
+          <div class="case-row">
+            <span class="case-label case-after">AFTER</span>
+            <span class="case-text">月7件に増加（3ヶ月後）</span>
+          </div>
+        </div>
+      </div>
+      <div class="case-card">
+        <div class="case-header">📊 税理士法人 B事務所（大阪）</div>
+        <div class="case-body">
+          <div class="case-row">
+            <span class="case-label case-before">BEFORE</span>
+            <span class="case-text">SNSエンゲージメント率 0.3%</span>
+          </div>
+          <div class="case-row">
+            <span class="case-label case-find">発見した問題</span>
+            <span class="case-text">冒頭1行が刺さらない・CTA導線なし</span>
+          </div>
+          <div class="case-row">
+            <span class="case-label case-after">AFTER</span>
+            <span class="case-text">エンゲージメント率 2.1%（7倍）</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <blockquote class="testimonial fade-in">
+      「自分のLPをテストしたら、"ここが気になって問い合わせできない"という
+      思ってもみなかった理由が出てきました。
+      あのまま広告をかけていたら、と思うとゾッとします。
+      トドクに相談して本当によかったです。」
+      <cite>― 社労士 C先生（仮名）</cite>
+    </blockquote>
+  </div>
+</section>
+
+<!-- SECTION 5: サービス内容 -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="tag">手に入るもの</div>
+    <h2 class="section-title">トドクと一緒に<span>変わること</span></h2>
+    <div class="service-grid fade-in">
+      <div class="service-card">
+        <div class="service-icon">📄</div>
+        <h4>LP・ホームページの改善支援</h4>
+        <p>問い合わせが来ない原因を特定して、文章・構成をデータ根拠で改善します。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">📱</div>
+        <h4>SNS投稿の改善支援</h4>
+        <p>刺さらない・止まらない原因を発見して、届く投稿に変えます。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🧪</div>
+        <h4>公開前VCT（仮想顧客テスト）</h4>
+        <p>AI仮想顧客があなたの文章を読み、「なぜ動かないか」を事前に突き止めます。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">📊</div>
+        <h4>DRMスコア評価</h4>
+        <p>集客・教育・販売の3段階で、今の発信が何点かを数値で可視化します。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">✍️</div>
+        <h4>改善版コピーの即時生成</h4>
+        <p>弱点を解消した改善案テキストを即時提示。書き直す手間がかかりません。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">📋</div>
+        <h4>商談・打ち合わせ用データ資料</h4>
+        <p>「なぜ今の文章が届かないか」をデータで見せながら改善提案できます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: 限定性 -->
+<section class="section">
+  <div class="container">
+    <div class="urgency-box fade-in">
+      <div class="urgency-badge">⚠️ 月3社限定受付中</div>
+      <h3>なぜ<span>今すぐ</span>動くべきか。</h3>
+      <p>
+        「公開前にテストしている事務所」が増えてきています。<br><br>
+        テストしている事務所とテストしていない事務所では<br>
+        同じ広告費をかけても、結果が大きく変わります。<br><br>
+        今動いた事務所は、改善データが積み上がっていく。<br>
+        半年後に動こうとした事務所は、<br>
+        その分だけ差が開いた競合と戦うことになります。
+      </p>
+      <a href="#final-cta" class="cta-btn">今すぐ無料相談する →</a>
+      <p style="color:rgba(255,255,255,0.5);font-size:0.82rem;margin-top:14px;">一人ひとりの改善に向き合うために、受付数を絞っています</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: FAQ -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="tag">よくある質問</div>
+    <h2 class="section-title">不安を<span>全部解消</span>します</h2>
+    <div class="faq-list">
+      <div class="faq-item fade-in">
+        <div class="faq-q">制作会社ではないのですか？</div>
+        <div class="faq-a">トドクは「作る会社」ではなく「届ける会社」です。すでにLPがある方の改善も、これから作る方の設計からも対応しています。</div>
+      </div>
+      <div class="faq-item fade-in">
+        <div class="faq-q">SNSの運用代行はしてもらえますか？</div>
+        <div class="faq-a">運用代行よりも「自分で発信できる仕組みを作る」支援が中心です。依存ではなく、自走できる状態を目指します。</div>
+      </div>
+      <div class="faq-item fade-in">
+        <div class="faq-q">どのくらいで効果が出ますか？</div>
+        <div class="faq-a">早い方で1〜2ヶ月以内に問い合わせの変化を感じていただいています。ただし、業種・現状・発信量によって異なります。まずは無料相談でお話をお聞きします。</div>
+      </div>
+      <div class="faq-item fade-in">
+        <div class="faq-q">料金はいくらですか？</div>
+        <div class="faq-a">サービス内容とご状況によって異なります。まずは無料相談でヒアリングの上、ご提案します。</div>
+      </div>
+      <div class="faq-item fade-in">
+        <div class="faq-q">士業以外でも対応していますか？</div>
+        <div class="faq-a">現在は士業事務所を中心にお受けしています。他業種の方はご相談ください。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section id="final-cta">
+  <div class="container">
+    <div class="limit-badge">🔒 月3社限定受付中</div>
+    <h2>公開する前に、<br><span>一度テストしてみてください。</span><br>それだけで、結果が変わります。</h2>
+    <p>
+      無料相談では、現在のLP・SNS・発信の状況をお聞きし<br>
+      「どこから手をつければ最も効果が出るか」をお伝えします。<br>
+      売り込みはしません。
+    </p>
+    <a href="mailto:maisonluxeforbae@gmail.com?subject=トドク 無料相談のお申し込み" class="cta-btn">トドクに無料相談する →</a>
+    <p class="cta-sub" style="color:rgba(255,255,255,0.4);margin-top:14px;">※ お申し込み後、2営業日以内にご連絡します</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 LIFE DESIGN LAB / トドク（橘実柑）　|　<a href="mailto:maisonluxeforbae@gmail.com">お問い合わせ</a></p>
+</footer>
+
+<script>
+  // Scroll fade-in animation
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

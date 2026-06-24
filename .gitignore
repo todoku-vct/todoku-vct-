@@ -1,0 +1,21 @@
+# APIキー・シークレット（絶対にGitHubに上げない）
+.env
+
+# テスト用PDF（不要）
+test_*.pdf
+img_test.pdf
+
+# データベース（ローカルの履歴）
+data/history.db
+
+# Pythonキャッシュ
+__pycache__/
+*.pyc
+*.pyo
+
+# 作業ログ（任意）
+作業ログ/
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
