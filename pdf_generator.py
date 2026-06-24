@@ -13,6 +13,16 @@ _FONT_R = r"C:\Windows\Fonts\meiryo.ttc"
 _FONT_B = r"C:\Windows\Fonts\meiryob.ttc"
 _FONT_FALLBACK = r"C:\Windows\Fonts\msgothic.ttc"
 
+# Linux フォントパス（Streamlit Cloud / Ubuntu — fonts-noto-cjk パッケージ）
+_LINUX_FONT_DIRS = [
+    "/usr/share/fonts/opentype/noto",
+    "/usr/share/fonts/truetype/noto",
+    "/usr/share/fonts/noto",
+    "/usr/share/fonts",
+]
+_LINUX_FONT_R_NAMES = ["NotoSansCJK-Regular.ttc", "NotoSansCJKjp-Regular.otf", "NotoSansJP-Regular.ttf"]
+_LINUX_FONT_B_NAMES = ["NotoSansCJK-Bold.ttc", "NotoSansCJKjp-Bold.otf", "NotoSansJP-Bold.ttf"]
+
 # ロゴ・キャラクター画像パス
 _LOGO_PATH      = os.path.join(os.path.dirname(__file__), "logo.png")
 _CHARACTER_PATH = os.path.join(os.path.dirname(__file__), "profile_dark.png")
@@ -98,8 +108,18 @@ CHARCOAL  = (35, 32, 28)      # 深いチャコール（カード背景）
 CHARCOAL2 = (50, 46, 40)      # 少し明るいチャコール
 
 
+def _find_linux_font(names: list) -> str:
+    """Linux環境でNoto CJKフォントを探索する。"""
+    for d in _LINUX_FONT_DIRS:
+        for name in names:
+            path = os.path.join(d, name)
+            if os.path.exists(path):
+                return path
+    return ""
+
+
 def _resolve_font():
-    """游明朝 → 游ゴシック → メイリオ の優先順でフォントを解決。"""
+    """游明朝 → 游ゴシック → メイリオ → Noto CJK（Linux）の優先順でフォントを解決。"""
     if os.path.exists(_FONT_MINCHO_R) and os.path.exists(_FONT_MINCHO_B):
         return _FONT_MINCHO_R, _FONT_MINCHO_B
     if os.path.exists(_FONT_GOTHIC_R) and os.path.exists(_FONT_GOTHIC_B):
@@ -108,6 +128,11 @@ def _resolve_font():
         return _FONT_R, _FONT_B
     if os.path.exists(_FONT_FALLBACK):
         return _FONT_FALLBACK, _FONT_FALLBACK
+    # Linux (Streamlit Cloud) fallback
+    r = _find_linux_font(_LINUX_FONT_R_NAMES)
+    b = _find_linux_font(_LINUX_FONT_B_NAMES)
+    if r:
+        return r, (b if b else r)
     return None, None
 
 
