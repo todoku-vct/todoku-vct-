@@ -108,6 +108,33 @@ CHARCOAL  = (35, 32, 28)      # 深いチャコール（カード背景）
 CHARCOAL2 = (50, 46, 40)      # 少し明るいチャコール
 
 
+def _calc_power_score(site_report: dict) -> tuple:
+    """AI総合パワースコア（100点満点）: DRM(30) + BrandZ(40) + GEO(30)。"""
+    mi = site_report.get("marketing_insights", {})
+    drm = mi.get("drm_score", "C")
+    drm_pts = {"A": 30, "B": 22, "C": 14, "D": 6}.get(drm, 14)
+
+    bz = site_report.get("brandz_score", {})
+    bz_vals = []
+    for key in ("meaningful", "different", "salient"):
+        v = bz.get(key, {}).get("score", 5)
+        try:
+            bz_vals.append(int(v))
+        except (ValueError, TypeError):
+            bz_vals.append(5)
+    bz_avg = sum(bz_vals) / len(bz_vals) if bz_vals else 5.0
+    bz_pts = round(bz_avg / 10 * 40)
+
+    geo = site_report.get("geo_score", {})
+    try:
+        geo_num = int(geo.get("score", 5))
+    except (ValueError, TypeError):
+        geo_num = 5
+    geo_pts = round(geo_num / 10 * 30)
+
+    return drm_pts + bz_pts + geo_pts, drm_pts, bz_pts, geo_pts
+
+
 def _find_linux_font(names: list) -> str:
     """Linux環境でNoto CJKフォントを探索する。"""
     for d in _LINUX_FONT_DIRS:
@@ -290,10 +317,15 @@ class _Base(FPDF):
 
         self.section_bar("マーケティング総合評価（DRM：ダイレクトレスポンスマーケティング）")
 
-        # DRM解説ボックス
+        # DRM解説ボックス（動的高さ）
         lm = self.l_margin
         ex_y = self.get_y()
-        ex_h = 30  # テキスト量に合わせた余裕ある高さ
+        _drm_explain = (
+            "「集客 → 教育 → 販売」の3ステップで見込み客を顧客へと育てるマーケティング手法です。"
+            "単に広告を出すのではなく、信頼関係を築きながら自然な流れで問い合わせ・成約へ導く導線設計が核心です。"
+        )
+        _drm_lines = max(2, -(-len(_drm_explain) // 36))
+        ex_h = max(30, _drm_lines * 5 + 16)
         self.set_fill_color(248, 244, 234)
         self.rect(lm, ex_y, 180, ex_h, style="F")
         self.set_fill_color(*GOLD)
@@ -305,11 +337,9 @@ class _Base(FPDF):
         self.set_xy(lm + 6, ex_y + 8)
         self.set_font(self._font, "", 7.5)
         self.set_text_color(22, 18, 10)
-        self.multi_cell(
-            171, 4.5,
-            "「集客 → 教育 → 販売」の3ステップで見込み客を顧客へと育てるマーケティング手法です。"
-            "単に広告を出すのではなく、信頼関係を築きながら自然な流れで問い合わせ・成約へ導く導線設計が核心です。"
-        )
+        self.set_auto_page_break(auto=False)
+        self.multi_cell(171, 4.5, _drm_explain)
+        self.set_auto_page_break(auto=True, margin=22)
         self.set_y(ex_y + ex_h + 4)
 
         # A〜D グレード説明（横一列）
@@ -366,20 +396,23 @@ class _Base(FPDF):
         self.set_text_color(160, 148, 100)
         self.cell(150, 5, "今回のサイトの総合評価")
         self.set_xy(lm + 26, y0 + 10)
-        self.set_font(self._font, "B", 9)
+        self.set_font(self._font, "B", 8.5)
         self.set_text_color(*WHITE)
-        self.cell(150, 5, desc[:38])
-        self.set_xy(lm + 26, y0 + 17)
-        self.set_font(self._font, "", 8)
-        self.set_text_color(200, 188, 155)
-        self.cell(150, 5, desc[38:] if len(desc) > 38 else "")
+        self.set_auto_page_break(auto=False)
+        self.multi_cell(150, 5.5, desc)
+        self.set_auto_page_break(auto=True, margin=22)
         self.set_y(y0 + 32)
         self.set_text_color(0, 0, 0)
 
         # 地味だけどヤバい改善ポイント
         gem = mi.get("hidden_gem", "")
         if gem:
+            if (297 - self.get_y() - 22) < 36:
+                self.add_page()
             y_gem = self.get_y()
+            # 高さを事前計算（動的）
+            _gem_lines = max(2, -(-len(gem) // 40))
+            _gem_body_h = _gem_lines * 5.5 + 10
             # ヘッダーバー
             self.set_fill_color(*self._accent)
             self.rect(lm, y_gem, 180, 7, style="F")
@@ -387,16 +420,18 @@ class _Base(FPDF):
             self.set_font(self._font, "B", 8.5)
             self.set_text_color(*WHITE)
             self.cell(170, 5, "◆  地味だけどヤバい改善ポイント")
-            # 本文エリア
+            # 本文エリア（動的高さ）
             self.set_fill_color(250, 244, 222)
-            self.rect(lm, y_gem + 7, 180, 14, style="F")
+            self.rect(lm, y_gem + 7, 180, _gem_body_h, style="F")
             self.set_fill_color(*self._accent)
-            self.rect(lm, y_gem + 7, 3, 14, style="F")
-            self.set_xy(lm + 7, y_gem + 10)
+            self.rect(lm, y_gem + 7, 3, _gem_body_h, style="F")
+            self.set_xy(lm + 7, y_gem + 11)
             self.set_font(self._font, "", 9)
             self.set_text_color(*NAVY)
-            self.multi_cell(170, 5.5, gem[:120])
-            self.set_y(y_gem + 25)
+            self.set_auto_page_break(auto=False)
+            self.multi_cell(170, 5.5, gem)
+            self.set_auto_page_break(auto=True, margin=22)
+            self.set_y(y_gem + 7 + _gem_body_h + 4)
             self.ln(2)
 
         self.set_text_color(0, 0, 0)
@@ -1003,6 +1038,90 @@ class _SitePDF(_Base):
         self.cell(210, 4, "LIFE DESIGN LAB  ·  TODOKU  ·  サイト改善支援サービス", align="C")
         self.set_text_color(0, 0, 0)
 
+    def guide_page(self):
+        """各スコア・指標の見方を解説するガイドページ。"""
+        self.add_page()
+        lm = self.l_margin
+        self.section_bar("このレポートの見方 — 各指標・スコアガイド")
+
+        guides = [
+            (
+                "推定問い合わせ率",
+                "仮想顧客10人が「問い合わせする・しない・迷う」を判定した割合です。\n"
+                "目安: 15%以上=高水準（広告投下タイミング） / 8〜14%=標準 / 7%以下=要改善",
+                (22, 120, 60),
+            ),
+            (
+                "AI 総合パワースコア（/100）",
+                "DRM・BrandZ・GEOの3軸を統合した総合点（DRM:30点 + BrandZ:40点 + GEO:30点）。\n"
+                "80点以上=今すぐ広告投下可能 / 60〜79点=1〜2項目改善で大幅アップ / 40〜59点=中程度の改善が必要 / 39点以下=抜本的な見直しが必要",
+                (180, 140, 20),
+            ),
+            (
+                "DRMスコア（A〜D）",
+                "集客→教育→販売の導線設計の総合評価。\n"
+                "A=すべて機能・広告投下タイミング / B=1〜2か所改善で大幅アップ / C=構造的問題あり・改善が先 / D=根本から見直しが必要",
+                BLUE_MID,
+            ),
+            (
+                "BrandZ 3軸スコア（各/10）",
+                "意味性=顧客の悩みに機能的・感情的に応えているか / 差別性=競合と明確に違うか / 顕著性=問題発生時に真っ先に思い出されるか（AI推薦含む）。\n"
+                "3軸すべてが高いほどブランドとして選ばれ続ける。1軸でも低いと集客効果が落ちる。",
+                (100, 140, 80),
+            ),
+            (
+                "GEO総合スコア（/10）",
+                "ChatGPT・Gemini・ClaudeなどのAIに「おすすめ」として推薦・引用されやすいかの評価（Kantar基準）。\n"
+                "7以上=AIに引用されやすい / 4〜6=部分的に対応 / 3以下=AIにほぼ無視される状態",
+                (80, 120, 180),
+            ),
+            (
+                "GEO 5ステップ評価（各/5）",
+                "S1構造化: 数字・ファクトで情報を整理できているか\n"
+                "S2 How to: 方法・手順・注意点系のコンテンツがあるか\n"
+                "S3 Q&A: 向いている人・向いていない人が明記されているか\n"
+                "S4比較表: 自社・他社比較表が実装されているか\n"
+                "S5事例: 誰が・何の悩みで・どう変化したかの数字入り事例があるか",
+                (80, 120, 180),
+            ),
+            (
+                "11項目チェックリスト（AIに評価されるための必須要素）",
+                "①誰向けの商品か ②何の悩みを解決するか ③他社と何が違うか ④料金はいくらか ⑤対応エリア "
+                "⑥利用までの流れ ⑦よくある質問 ⑧向いている人 ⑨向いていない人 ⑩お客様の声 ⑪事例 ⑫専門性の根拠。\n"
+                "不足している項目から順に追加すると、AIに「専門家」と認識されやすくなります。",
+                (80, 120, 180),
+            ),
+        ]
+
+        for title, body, accent in guides:
+            _b_lines = max(2, -(-len(body) // 44))
+            card_h = 13 + _b_lines * 5 + 6
+            if (297 - self.get_y() - 22) < card_h + 4:
+                self.add_page()
+            y = self.get_y()
+            self.set_fill_color(248, 244, 234)
+            self.rect(lm, y, 180, card_h, style="F")
+            self.set_fill_color(*accent)
+            self.rect(lm, y, 3, card_h, style="F")
+            self.set_fill_color(*GOLD)
+            self.rect(lm, y, 180, 0.6, style="F")
+            self.set_xy(lm + 7, y + 3)
+            self.set_font(self._font, "B", 9)
+            self.set_text_color(42, 36, 22)
+            self.cell(170, 5.5, title)
+            self.set_fill_color(201, 169, 110)
+            self.rect(lm + 3, y + 11, 177, 0.3, style="F")
+            self.set_xy(lm + 8, y + 14)
+            self.set_font(self._font, "", 8.5)
+            self.set_text_color(22, 18, 10)
+            self.set_auto_page_break(auto=False)
+            self.multi_cell(168, 5, body)
+            self.set_auto_page_break(auto=True, margin=22)
+            self.set_y(y + card_h + 4)
+
+        self.set_text_color(0, 0, 0)
+        self._final_footer()
+
     def cover_page(self, site_url: str, profession: str, page_count: int):
         self.set_auto_page_break(auto=False)
         self.add_page()
@@ -1208,7 +1327,40 @@ def generate_site_pdf(
     pdf.set_text_color(*rate_color)
     pdf.cell(rw, 4, rate_badge, align="C")
 
-    pdf.set_y(y0 + hero_h + 8)
+    pdf.set_y(y0 + hero_h + 6)
+    pdf.set_text_color(0, 0, 0)
+
+    # ── AI 総合パワースコア ──
+    total_ps, drm_pts, bz_pts, geo_pts = _calc_power_score(site_report)
+    ps_color = GREEN_MID if total_ps >= 70 else ((217, 119, 6) if total_ps >= 50 else (185, 28, 28))
+    y_ps = pdf.get_y()
+    pdf.set_fill_color(42, 36, 22)
+    pdf.rect(lm, y_ps, 180, 16, style="F")
+    pdf.set_fill_color(*ps_color)
+    pdf.rect(lm, y_ps, 180, 0.8, style="F")
+    pdf.set_xy(lm + 6, y_ps + 2.5)
+    pdf.set_font(pdf._font, "", 7)
+    pdf.set_text_color(160, 148, 100)
+    pdf.cell(50, 4, "AI 総合パワースコア")
+    pdf.set_xy(lm + 6, y_ps + 7)
+    pdf.set_font(pdf._font, "B", 15)
+    pdf.set_text_color(*ps_color)
+    pdf.cell(20, 7, f"{total_ps}")
+    pdf.set_font(pdf._font, "", 8)
+    pdf.set_text_color(160, 148, 100)
+    pdf.cell(18, 7, "/ 100")
+    x_sub = lm + 80
+    for sub_l, sub_v in [("DRM", f"{drm_pts}/30"), ("BrandZ", f"{bz_pts}/40"), ("GEO", f"{geo_pts}/30")]:
+        pdf.set_xy(x_sub, y_ps + 3)
+        pdf.set_font(pdf._font, "", 6.5)
+        pdf.set_text_color(140, 128, 90)
+        pdf.cell(30, 4, sub_l, align="C")
+        pdf.set_xy(x_sub, y_ps + 8)
+        pdf.set_font(pdf._font, "B", 9)
+        pdf.set_text_color(*GOLD)
+        pdf.cell(30, 5.5, sub_v, align="C")
+        x_sub += 32
+    pdf.set_y(y_ps + 20)
     pdf.set_text_color(0, 0, 0)
 
     # ── 強み / 弱み ──
@@ -1269,29 +1421,39 @@ def generate_site_pdf(
     if nav_issues:
         pdf.section_bar("導線・ナビゲーションの問題")
         for ni in nav_issues:
+            issue_text = ni.get("issue", "")
+            suggestion_text = ni.get("suggestion", "")
+            page_name = ni.get("page", "")
+            # カード高さを事前計算
+            _i_lines = max(1, -(-len(issue_text) // 36))
+            _s_lines = max(1, -(-len(suggestion_text) // 40))
+            _card_h = 7 + _i_lines * 5.5 + 6 + _s_lines * 5.5 + 8
+            if (297 - pdf.get_y() - 22) < _card_h + 4:
+                pdf.add_page()
+                _meta_bar(pdf)
             y_ni = pdf.get_y()
-            # ページ名バッジ
+            # ページ名バッジ（全幅）
             pdf.set_fill_color(42, 36, 22)
-            pdf.rect(lm, y_ni, 40, 7, style="F")
-            pdf.set_xy(lm + 2, y_ni + 1.5)
-            pdf.set_font(pdf._font, "B", 7.5)
+            pdf.rect(lm, y_ni, 180, 7, style="F")
+            pdf.set_fill_color(*GOLD)
+            pdf.rect(lm, y_ni, 3.5, 7, style="F")
+            pdf.set_xy(lm + 8, y_ni + 1.5)
+            pdf.set_font(pdf._font, "B", 8)
             pdf.set_text_color(*GOLD)
-            pdf.cell(36, 4, ni.get("page", "")[:18], align="C")
-            # 問題
-            pdf.set_xy(lm + 44, y_ni + 0.5)
+            pdf.cell(168, 4, page_name[:35])
+            # 問題テキスト（折り返し対応）
+            pdf.set_xy(lm, y_ni + 8)
             pdf.set_font(pdf._font, "B", 8.5)
             pdf.set_text_color(*RED_T)
-            pdf.cell(136, 5, ni.get("issue", "")[:52])
-            # 改善提案
+            pdf.set_fill_color(255, 245, 245)
+            pdf.multi_cell(180, 5.5, issue_text, fill=True, padding=(2, 4, 2, 4))
+            # 改善提案ボックス（折り返し対応）
+            pdf.set_xy(lm, pdf.get_y() + 2)
             pdf.set_fill_color(248, 244, 234)
-            pdf.rect(lm + 44, y_ni + 7, 136, 9, style="F")
-            pdf.set_fill_color(*GOLD)
-            pdf.rect(lm + 44, y_ni + 7, 2, 9, style="F")
-            pdf.set_xy(lm + 50, y_ni + 9)
             pdf.set_font(pdf._font, "", 8)
             pdf.set_text_color(22, 18, 10)
-            pdf.cell(128, 5, f"→ {ni.get('suggestion', '')[:58]}")
-            pdf.set_y(y_ni + 19)
+            pdf.multi_cell(180, 5.5, f"→ 改善提案: {suggestion_text}", fill=True, padding=(2, 4, 2, 8))
+            pdf.set_y(pdf.get_y() + 5)
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
 
@@ -1299,16 +1461,20 @@ def generate_site_pdf(
     if missing:
         pdf.section_bar("あると効果的なページ（現在なし）")
         for m in missing[:6]:
+            _m_lines = max(1, -(-len(m) // 46))
+            _m_h = max(13, _m_lines * 5.5 + 8)
             y_m = pdf.get_y()
             pdf.set_fill_color(248, 244, 234)
-            pdf.rect(lm, y_m, 180, 13, style="F")
+            pdf.rect(lm, y_m, 180, _m_h, style="F")
             pdf.set_fill_color(*GOLD)
-            pdf.rect(lm, y_m, 3, 13, style="F")
+            pdf.rect(lm, y_m, 3, _m_h, style="F")
             pdf.set_xy(lm + 8, y_m + 4)
             pdf.set_font(pdf._font, "B", 9)
             pdf.set_text_color(22, 18, 10)
-            pdf.cell(168, 5.5, f"◆  {m[:46]}")
-            pdf.set_y(y_m + 16)
+            pdf.set_auto_page_break(auto=False)
+            pdf.multi_cell(168, 5.5, f"◆  {m}")
+            pdf.set_auto_page_break(auto=True, margin=22)
+            pdf.set_y(y_m + _m_h + 3)
         pdf.set_text_color(0, 0, 0)
 
     pdf._fill_page_bottom()
@@ -1352,21 +1518,27 @@ def generate_site_pdf(
         pdf._fill_page_bottom()
 
     # ─────────────────────────────────────────────
-    # p.6  BrandZ + GEO スコア
+    # p.6  BrandZ スコア
     # ─────────────────────────────────────────────
     bz = site_report.get("brandz_score")
-    geo = site_report.get("geo_score")
-    if bz or geo:
+    if bz:
         pdf.add_page()
         _meta_bar(pdf)
-        if bz:
-            pdf.brandz_section(bz)
-        if geo:
-            pdf.geo_section(geo)
+        pdf.brandz_section(bz)
         pdf._fill_page_bottom()
 
     # ─────────────────────────────────────────────
-    # p.7  収集ページ一覧
+    # p.7  GEO スコア
+    # ─────────────────────────────────────────────
+    geo = site_report.get("geo_score")
+    if geo:
+        pdf.add_page()
+        _meta_bar(pdf)
+        pdf.geo_section(geo)
+        pdf._fill_page_bottom()
+
+    # ─────────────────────────────────────────────
+    # p.8  収集ページ一覧
     # ─────────────────────────────────────────────
     pdf.add_page()
     _meta_bar(pdf)
@@ -1402,5 +1574,9 @@ def generate_site_pdf(
         pdf.cell(0, 5, f"…他 {len(scraped_pages) - 30} ページ（合計 {len(scraped_pages)} ページ収集）")
         pdf.ln(5)
     pdf.set_text_color(0, 0, 0)
-    pdf._final_footer()
+
+    # ─────────────────────────────────────────────
+    # 最終ページ  各指標の見方ガイド
+    # ─────────────────────────────────────────────
+    pdf.guide_page()
     return bytes(pdf.output())
