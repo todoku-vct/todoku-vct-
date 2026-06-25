@@ -1160,6 +1160,85 @@ class _SitePDF(_Base):
         """ページ下部の余白処理（現在は空白のまま残す）。"""
         pass
 
+    def next_actions_page(self, site_report: dict):
+        """ネクストアクション3選ページ — クライアントが迷わず動けるよう優先行動を大きく提示。"""
+        self.add_page()
+        lm = self.l_margin
+        self.section_bar("これだけやれば変わる — 優先アクション 3 選")
+
+        # アクションデータを収集
+        priority_action = site_report.get("priority_action", "")
+        weaknesses = site_report.get("weaknesses", [])
+        actions = []
+        if priority_action:
+            actions.append(("最優先アクション", "今週中に実行", priority_action, GREEN_MID))
+        for w in weaknesses:
+            if len(actions) >= 3:
+                break
+            sug = w.get("suggestion", "").strip()
+            point = w.get("point", "").strip()
+            if sug:
+                if len(actions) == 1:
+                    actions.append((point, "今月中に実行", sug, BLUE_MID))
+                else:
+                    actions.append((point, "来月以降に対応", sug, (140, 108, 40)))
+        while len(actions) < 3:
+            actions.append(("継続的な改善", "随時", "スコアの低い項目から順に対策を進めてください。", (140, 120, 80)))
+
+        numbers = ["1", "2", "3"]
+        timing_colors = [GREEN_MID, BLUE_MID, (140, 108, 40)]
+        card_h = 50
+        gap = 5
+
+        self.set_auto_page_break(auto=False)
+        for idx, (title, timing, action, color) in enumerate(actions[:3]):
+            y_c = self.get_y()
+            # カード全体背景
+            self.set_fill_color(248, 244, 234)
+            self.rect(lm, y_c, 180, card_h, style="F")
+            # 左カラー帯（20mm）
+            self.set_fill_color(*color)
+            self.rect(lm, y_c, 20, card_h, style="F")
+            # 番号
+            self.set_xy(lm, y_c + 13)
+            self.set_font(self._font, "B", 22)
+            self.set_text_color(*WHITE)
+            self.cell(20, 18, numbers[idx], align="C")
+            # タイミングバッジ
+            t_col = timing_colors[idx]
+            self.set_fill_color(*t_col)
+            self.rect(lm + 24, y_c + 4, 28, 7, style="F")
+            self.set_xy(lm + 24, y_c + 4.5)
+            self.set_font(self._font, "B", 7)
+            self.set_text_color(*WHITE)
+            self.cell(28, 6, timing, align="C")
+            # アクションタイトル
+            self.set_xy(lm + 56, y_c + 4)
+            self.set_font(self._font, "B", 7)
+            self.set_text_color(120, 100, 50)
+            self.cell(120, 7, title)
+            # アクション本文（大きめフォント）
+            self.set_xy(lm + 24, y_c + 15)
+            self.set_font(self._font, "B", 10)
+            self.set_text_color(22, 18, 10)
+            self.multi_cell(152, 6.5, action)
+            self.set_y(y_c + card_h + gap)
+
+        # 締めの一言
+        self.set_y(self.get_y() + 4)
+        self.set_fill_color(42, 36, 22)
+        self.rect(lm, self.get_y(), 180, 14, style="F")
+        self.set_fill_color(*GOLD)
+        self.rect(lm, self.get_y(), 180, 0.5, style="F")
+        self.set_xy(lm, self.get_y() + 3)
+        self.set_font(self._font, "B", 8)
+        self.set_text_color(*GOLD)
+        self.cell(180, 8, "まず①だけ実行すれば、問い合わせ数は変わり始めます。", align="C")
+
+        self.set_text_color(0, 0, 0)
+        self._final_footer()
+        self.set_auto_page_break(auto=True, margin=22)
+
     def guide_page(self):
         """各スコア・指標の見方を解説するガイドページ（1ページ収録・大学生でもわかる言葉）。"""
         self.add_page()
@@ -1253,7 +1332,7 @@ class _SitePDF(_Base):
         self._final_footer()
         self.set_auto_page_break(auto=True, margin=22)
 
-    def cover_page(self, site_url: str, profession: str, page_count: int):
+    def cover_page(self, site_url: str, profession: str, page_count: int, power_score: int = 0):
         self.set_auto_page_break(auto=False)
         self.add_page()
 
@@ -1302,32 +1381,58 @@ class _SitePDF(_Base):
         self.set_text_color(155, 143, 96)
         self.cell(210, 5, "仮想顧客テスト  ·  Powered by Claude AI", align="C")
 
-        # URLカード（全幅内）
+        # URLカード（左: URL情報 / 右: パワースコア）
         self.ln(14)
         bx, by = 14, self.get_y()
-        bw, bh = 182, 36
-        self.set_fill_color(18, 16, 12)
-        self.rect(bx, by, bw, bh, style="F")
-        self.set_fill_color(*GOLD)
-        self.rect(bx, by, bw, 0.3, style="F")
-        self.rect(bx, by + bh - 0.3, bw, 0.3, style="F")
-        self.rect(bx, by, 1.5, bh, style="F")
+        bw, bh = 182, 40
+        url_w, score_w = 115, 67
 
+        # URL側（左）
+        self.set_fill_color(18, 16, 12)
+        self.rect(bx, by, url_w, bh, style="F")
+        self.set_fill_color(*GOLD)
+        self.rect(bx, by, url_w, 0.3, style="F")
+        self.rect(bx, by + bh - 0.3, url_w, 0.3, style="F")
+        self.rect(bx, by, 1.5, bh, style="F")
         self.set_xy(bx + 6, by + 6)
         self.set_font(self._font, "", 6)
         self.set_text_color(*GOLD)
-        self.cell(bw - 8, 4, "分析対象サイト")
-
+        self.cell(url_w - 8, 4, "分析対象サイト")
         self.set_xy(bx + 6, by + 12)
         self.set_font(self._font, "B", 7.5)
         self.set_text_color(*WHITE)
-        url_disp = site_url[:42] + ("…" if len(site_url) > 42 else "")
-        self.cell(bw - 8, 5.5, url_disp)
-
-        self.set_xy(bx + 6, by + 23)
+        url_disp = site_url[:38] + ("…" if len(site_url) > 38 else "")
+        self.cell(url_w - 8, 5.5, url_disp)
+        self.set_xy(bx + 6, by + 26)
         self.set_font(self._font, "", 6.5)
         self.set_text_color(155, 143, 96)
-        self.cell(bw - 8, 5, f"ジャンル: {profession}  ·  {page_count}ページ収集")
+        self.cell(url_w - 8, 5, f"ジャンル: {profession}  ·  {page_count}ページ収集")
+
+        # スコア側（右）
+        ps_col = GREEN_MID if power_score >= 70 else ((217, 119, 6) if power_score >= 50 else (185, 28, 28))
+        ps_str = "広告投下タイミング" if power_score >= 70 else ("改善で伸びる" if power_score >= 50 else "要見直し")
+        sx = bx + url_w + 1
+        self.set_fill_color(12, 10, 6)
+        self.rect(sx, by, score_w, bh, style="F")
+        self.set_fill_color(*ps_col)
+        self.rect(sx, by, score_w, 0.3, style="F")
+        self.rect(sx, by + bh - 0.3, score_w, 0.3, style="F")
+        self.rect(sx + score_w - 0.3, by, 0.3, bh, style="F")
+        self.set_xy(sx, by + 5)
+        self.set_font(self._font, "", 6)
+        self.set_text_color(155, 143, 96)
+        self.cell(score_w, 4, "AI 総合パワースコア", align="C")
+        self.set_xy(sx, by + 10)
+        self.set_font(self._font, "B", 26)
+        self.set_text_color(*ps_col)
+        self.cell(score_w - 10, 14, f"{power_score}", align="R")
+        self.set_font(self._font, "", 9)
+        self.set_text_color(155, 143, 96)
+        self.cell(10, 14, "/100")
+        self.set_xy(sx, by + 30)
+        self.set_font(self._font, "B", 6.5)
+        self.set_text_color(*ps_col)
+        self.cell(score_w, 5, ps_str, align="C")
 
         # 作成日
         self.set_y(by + bh + 9)
@@ -1374,7 +1479,8 @@ def generate_site_pdf(
     pdf = _SitePDF()
     lm = pdf.l_margin
 
-    pdf.cover_page(site_url, profession, len(scraped_pages))
+    total_ps_cover, _, _, _ = _calc_power_score(site_report)
+    pdf.cover_page(site_url, profession, len(scraped_pages), power_score=total_ps_cover)
     pdf.set_auto_page_break(auto=True, margin=22)  # カバー後に再有効化
     pdf.add_page()
 
@@ -1721,37 +1827,46 @@ def generate_site_pdf(
     _meta_bar(pdf)
 
     pdf.section_bar(f"収集したページ一覧（全 {len(scraped_pages)} ページ）")
-    # 2列レイアウト（最大40ページ表示、ページオーバーフロー対応）
+    # 2列レイアウト（最大40ページ）
     col_pw = 86
     display_pages = scraped_pages[:40]
+    _row_bgs = [(244, 241, 233), (238, 234, 222)]  # 交互背景
     for i, page in enumerate(display_pages):
         col_x = lm if i % 2 == 0 else lm + col_pw + 8
         if i % 2 == 0:
-            # 左列開始時にページ超えチェック
             if (297 - pdf.get_y() - 22) < 14:
                 pdf.add_page()
                 _meta_bar(pdf)
                 pdf.set_font(pdf._font, "B", 8)
                 pdf.set_text_color(*GRAY)
-                pdf.cell(0, 5, f"（続き）収集ページ一覧")
+                pdf.cell(0, 5, "（続き）収集ページ一覧")
                 pdf.ln(6)
                 pdf.set_text_color(0, 0, 0)
             y_row_p = pdf.get_y()
         y_p2 = y_row_p
-        title = page.get("title", "（タイトルなし）")[:24]
-        url   = page.get("url", "")[:34]
-        pdf.set_fill_color(244, 241, 233)
-        pdf.rect(col_x, y_p2, col_pw, 11, style="F")
+        title = page.get("title", "（タイトルなし）")[:22]
+        url   = page.get("url", "")[:32]
+        row_num = i // 2
+        # カード背景（行ごとに交互）
+        pdf.set_fill_color(*_row_bgs[row_num % 2])
+        pdf.rect(col_x, y_p2, col_pw, 12, style="F")
+        # 番号バッジ（ゴールド正方形）
         pdf.set_fill_color(*GOLD)
-        pdf.rect(col_x, y_p2, 2, 11, style="F")
-        pdf.set_xy(col_x + 5, y_p2 + 1.5)
+        pdf.rect(col_x, y_p2, 12, 12, style="F")
+        pdf.set_xy(col_x, y_p2 + 1.5)
+        pdf.set_font(pdf._font, "B", 7)
+        pdf.set_text_color(*WHITE)
+        pdf.cell(12, 9, str(i + 1), align="C")
+        # タイトル
+        pdf.set_xy(col_x + 14, y_p2 + 1.5)
         pdf.set_font(pdf._font, "B", 7.5)
-        pdf.set_text_color(22, 18, 10)
-        pdf.cell(col_pw - 6, 4.5, f"{i+1}. {title}")
-        pdf.set_xy(col_x + 5, y_p2 + 6.5)
-        pdf.set_font(pdf._font, "", 6.5)
+        pdf.set_text_color(30, 24, 12)
+        pdf.cell(col_pw - 15, 5, title)
+        # URL
+        pdf.set_xy(col_x + 14, y_p2 + 7)
+        pdf.set_font(pdf._font, "", 6)
         pdf.set_text_color(*GRAY)
-        pdf.cell(col_pw - 6, 4, url)
+        pdf.cell(col_pw - 15, 4, url)
         if i % 2 == 1 or i == len(display_pages) - 1:
             pdf.set_y(y_p2 + 14)
     if len(scraped_pages) > 40:
@@ -1761,6 +1876,11 @@ def generate_site_pdf(
         pdf.cell(0, 5, f"…他 {len(scraped_pages) - 40} ページ（合計 {len(scraped_pages)} ページ収集）")
         pdf.ln(5)
     pdf.set_text_color(0, 0, 0)
+
+    # ─────────────────────────────────────────────
+    # 最終ページ手前  ネクストアクション3選
+    # ─────────────────────────────────────────────
+    pdf.next_actions_page(site_report)
 
     # ─────────────────────────────────────────────
     # 最終ページ  各指標の見方ガイド
