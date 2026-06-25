@@ -1,5 +1,6 @@
 from fpdf import FPDF
 from datetime import datetime
+import math
 import os
 import tempfile
 from PIL import Image as _PILImage
@@ -54,6 +55,15 @@ def _make_cover_char(src_path: str, bg=(8, 8, 8), fade_frac: float = 0.45) -> st
     fade_h = int(h * 0.20)
     for y in range(fade_h):
         t = y / fade_h
+        alpha = int(255 * (t ** 1.6))
+        for x in range(w):
+            cur = mask.getpixel((x, y))
+            mask.putpixel((x, y), min(cur, alpha))
+
+    # 下フェード（18%高さ・キャラ下端を背景に自然に溶かす）
+    fade_h_b = int(h * 0.18)
+    for y in range(h - fade_h_b, h):
+        t = (h - y) / fade_h_b
         alpha = int(255 * (t ** 1.6))
         for x in range(w):
             cur = mask.getpixel((x, y))
@@ -321,7 +331,7 @@ class _Base(FPDF):
         lm = self.l_margin
         ex_y = self.get_y()
         _drm_explain = (
-            "「集客 → 教育 → 販売」の3ステップで見込み客を顧客へと育てるマーケティング手法です。"
+            "集客・教育・販売の3ステップで見込み客を顧客へと育てるマーケティング手法です。"
             "単に広告を出すのではなく、信頼関係を築きながら自然な流れで問い合わせ・成約へ導く導線設計が核心です。"
         )
         _drm_lines = max(2, -(-len(_drm_explain) // 36))
@@ -512,7 +522,7 @@ class _Base(FPDF):
         for label, sub, key, accent in axes:
             data = bz.get(key, {})
             score = int(data.get("score", 5)) if str(data.get("score", "5")).isdigit() else 5
-            comment = data.get("comment", "")
+            comment = " ".join(data.get("comment", "").split())  # 余分な空白を正規化
 
             chars_per_line = 52
             lines = max(1, -(-len(comment) // chars_per_line))
@@ -527,7 +537,7 @@ class _Base(FPDF):
             self.set_fill_color(248, 244, 234)
             self.rect(lm, y, 180, card_h, style="F")
             self.set_fill_color(*GOLD)
-            self.rect(lm, y, 180, 0.8, style="F")
+            self.rect(lm, y, 155, 0.8, style="F")  # スコア円の手前で止める
             self.set_fill_color(*accent)
             self.rect(lm, y, 3, card_h, style="F")
 
@@ -584,8 +594,64 @@ class _Base(FPDF):
 
         self.set_text_color(0, 0, 0)
 
+    def _draw_geo_pentagon(self, cx: float, cy: float, r: float, scores: list, labels: list):
+        """GEO 5ステップの五角形レーダーチャートを描画。"""
+        n = 5
+        angles = [-math.pi / 2 + 2 * math.pi * i / n for i in range(n)]
+
+        # グリッドリング（薄い線を5段階）
+        for level in range(1, 6):
+            pts = [(cx + r * level / 5 * math.cos(a), cy + r * level / 5 * math.sin(a)) for a in angles]
+            is_outer = (level == 5)
+            self.set_draw_color(*(GOLD if is_outer else (200, 185, 140)))
+            self.set_line_width(0.5 if is_outer else 0.15)
+            for i in range(n):
+                self.line(pts[i][0], pts[i][1], pts[(i + 1) % n][0], pts[(i + 1) % n][1])
+
+        # 軸線（中心から各頂点へ）
+        self.set_draw_color(200, 185, 140)
+        self.set_line_width(0.15)
+        for a in angles:
+            self.line(cx, cy, cx + r * math.cos(a), cy + r * math.sin(a))
+
+        # スコアポリゴン（ゴールド塗り）
+        safe_scores = []
+        for s in scores:
+            try:
+                safe_scores.append(min(5, max(0, int(s))))
+            except (TypeError, ValueError):
+                safe_scores.append(0)
+        score_pts = [
+            (cx + r * (safe_scores[i] / 5) * math.cos(angles[i]),
+             cy + r * (safe_scores[i] / 5) * math.sin(angles[i]))
+            for i in range(n)
+        ]
+        self.set_fill_color(*GOLD_LIGHT)
+        self.set_draw_color(*GOLD)
+        self.set_line_width(0.7)
+        self.polygon(score_pts, style="FD")
+
+        # 各頂点ラベルとスコア値
+        label_r = r + 13
+        for i, (label, a) in enumerate(zip(labels, angles)):
+            lx = cx + label_r * math.cos(a)
+            ly = cy + label_r * math.sin(a)
+            # 上端ラベルは少し上にずらす
+            offset_y = -3 if i == 0 else (-1 if i in (1, 4) else 1)
+            self.set_font(self._font, "", 6)
+            self.set_text_color(80, 70, 50)
+            self.set_xy(lx - 18, ly + offset_y - 4.5)
+            self.cell(36, 4, label, align="C")
+            self.set_font(self._font, "B", 8.5)
+            self.set_text_color(*GOLD)
+            self.set_xy(lx - 18, ly + offset_y)
+            self.cell(36, 4.5, f"{safe_scores[i]} / 5", align="C")
+
+        self.set_text_color(0, 0, 0)
+        self.set_line_width(0.2)
+
     def geo_section(self, geo: dict):
-        """GEO（AI検索最適化）スコアセクション — 5ステップ＋11項目チェックリスト"""
+        """GEO（AI検索最適化）スコアセクション — 総合スコア＋五角形チャート＋チェックリスト"""
         if not geo:
             return
         lm = self.l_margin
@@ -609,7 +675,7 @@ class _Base(FPDF):
         self.cell(110, 6, "AIに推薦・引用されやすさ（Kantar GEO対策基準）")
         self.set_y(y + 17)
 
-        # ── 5ステップスコア ──
+        # ── 五角形レーダーチャート（左）＋ステップ詳細（右） ──
         step_scores = geo.get("step_scores", {})
         steps = [
             ("S1 構造化", "step1_structure"),
@@ -619,28 +685,59 @@ class _Base(FPDF):
             ("S5 事例",  "step5_case"),
         ]
         if step_scores:
-            y = self.get_y()
+            chart_y = self.get_y()
+            chart_area_h = 76  # 五角形エリアの高さ
+            chart_area_w = 92  # 左カラム幅
+
+            # 背景
             self.set_fill_color(248, 244, 234)
-            self.rect(lm, y, 180, 18, style="F")
+            self.rect(lm, chart_y, 180, chart_area_h, style="F")
             self.set_fill_color(*GOLD)
-            self.rect(lm, y, 180, 0.6, style="F")
-            self.set_font(self._font, "B", 7.5)
-            self.set_text_color(42, 36, 22)
-            self.set_xy(lm + 4, y + 3)
-            self.cell(180, 4, "GEO対策 5ステップ評価（各5点）")
-            col_w = 34
-            for i, (label, key) in enumerate(steps):
-                val = step_scores.get(key, "–")
-                cx = lm + 4 + i * col_w
-                self.set_xy(cx, y + 9)
+            self.rect(lm, chart_y, 180, 0.6, style="F")
+
+            # 五角形チャート（左エリアの中央）
+            pentagon_cx = lm + chart_area_w / 2
+            pentagon_cy = chart_y + chart_area_h / 2 + 3
+            pentagon_r = 26
+
+            score_vals = [step_scores.get(key, 0) for _, key in steps]
+            step_labels = [label for label, _ in steps]
+            self._draw_geo_pentagon(pentagon_cx, pentagon_cy, pentagon_r, score_vals, step_labels)
+
+            # 右エリア: 5ステップのスコアバー一覧
+            rx = lm + chart_area_w + 4
+            rw = 180 - chart_area_w - 4
+            step_full_labels = ["S1 構造化（数字・ファクト整理）", "S2 How to（方法・手順コンテンツ）", "S3 Q&A（向く人/向かない人）", "S4 比較表（自社他社比較）", "S5 事例（数字入りビフォーアフター）"]
+            for i, ((label, key), full_label) in enumerate(zip(steps, step_full_labels)):
+                iy = chart_y + 6 + i * 14
+                val = step_scores.get(key, 0)
+                try:
+                    val_num = min(5, max(0, int(val)))
+                except (TypeError, ValueError):
+                    val_num = 0
+                # ラベル
                 self.set_font(self._font, "", 6.5)
-                self.set_text_color(80, 70, 50)
-                self.cell(col_w - 2, 4, label, align="C")
-                self.set_xy(cx, y + 13)
+                self.set_text_color(60, 50, 30)
+                self.set_xy(rx, iy)
+                self.cell(rw - 14, 4.5, full_label)
+                # スコア数値（右端）
                 self.set_font(self._font, "B", 9)
-                self.set_text_color(42, 36, 22)
-                self.cell(col_w - 2, 4, f"{val} / 5", align="C")
-            self.set_y(y + 21)
+                self.set_text_color(*GOLD)
+                self.set_xy(rx + rw - 14, iy - 0.5)
+                self.cell(14, 5, f"{val_num}/5", align="R")
+                # スコアバー
+                bar_y = iy + 5.5
+                bar_w = rw - 16
+                self.set_fill_color(210, 200, 170)
+                self.rect(rx, bar_y, bar_w, 3, style="F")
+                fill_ratio = val_num / 5
+                fill_col = GREEN_MID if fill_ratio >= 0.7 else ((217, 119, 6) if fill_ratio >= 0.4 else (185, 28, 28))
+                if fill_ratio > 0:
+                    self.set_fill_color(*fill_col)
+                    self.rect(rx, bar_y, bar_w * fill_ratio, 3, style="F")
+
+            self.set_text_color(0, 0, 0)
+            self.set_y(chart_y + chart_area_h + 4)
 
         # ── チェックリスト（縦並び：切れ防止） ──
         ok_items = geo.get("checklist_ok", [])
@@ -1021,12 +1118,7 @@ class _SitePDF(_Base):
         self.set_xy(lm + 8, y + 2.5)
         self.set_font(self._font, "B", 9.5)
         self.set_text_color(*WHITE)
-        self.cell(155, 7, text)
-        # ◆ 右端
-        self.set_xy(lm + 158, y + 2.5)
-        self.set_font(self._font, "", 8)
-        self.set_text_color(*GOLD)
-        self.cell(22, 7, "◆", align="R")
+        self.cell(168, 7, text)
         # 下ライン
         self.set_fill_color(*GOLD)
         self.rect(lm, y + bar_h, 180, 0.3, style="F")
@@ -1034,89 +1126,112 @@ class _SitePDF(_Base):
         self.set_text_color(0, 0, 0)
 
     def _fill_page_bottom(self):
-        """p.2〜p.5 下部: 余白があればゴールドラインとブランド名のみ（シンプル）。"""
+        """ページ下部の余白にブランド名テキストのみを表示（フッターのゴールドラインと二重にならないよう線は描かない）。"""
         remaining = 297 - self.get_y() - 22
-        if remaining < 12:
+        if remaining < 20:
             return
-        lm = self.l_margin
-        y = self.get_y() + max(6, remaining * 0.45)
-        self.set_fill_color(*GOLD)
-        self.rect(0, y, 210, 0.3, style="F")
-        self.set_xy(0, y + 3)
+        y_text = self.get_y() + max(6, remaining * 0.4)
+        # テキストが自動改ページを起こさないか確認
+        if y_text + 4 > 297 - 22:
+            return
+        self.set_xy(0, y_text)
         self.set_font(self._font, "", 6.5)
         self.set_text_color(140, 128, 88)
         self.cell(210, 4, "LIFE DESIGN LAB  ·  TODOKU  ·  サイト改善支援サービス", align="C")
         self.set_text_color(0, 0, 0)
 
     def guide_page(self):
-        """各スコア・指標の見方を解説するガイドページ（1ページ収録）。"""
+        """各スコア・指標の見方を解説するガイドページ（1ページ収録・大学生でもわかる言葉）。"""
         self.add_page()
         lm = self.l_margin
         self.section_bar("このレポートの見方 — 各指標・スコアガイド")
 
+        # ── 見方ガイド（大学生でもわかる簡潔な説明）──
+        # タイトル(太字) / ひと言解説 / 判断基準
         guides = [
             (
                 "推定問い合わせ率",
-                "仮想顧客10人が「問い合わせする・しない・迷う」を判定した割合。15%以上=高水準 / 8〜14%=標準 / 7%以下=要改善",
+                "AIが演じる10人の仮想顧客が「問い合わせしたい」と思った割合です。",
+                "30%以上=高水準　12〜29%=標準　11%以下=要改善",
                 (22, 120, 60),
             ),
             (
-                "AI 総合パワースコア（/100）",
-                "DRM(30点)+BrandZ(40点)+GEO(30点)を統合した総合点。80点以上=広告投下タイミング / 60〜79=改善で伸びる / 59以下=要見直し",
+                "AI 総合パワースコア（100点満点）",
+                "DRM・BrandZ・GEOの3つのスコアを合計した、サイト全体の総合点です。",
+                "80点以上=広告を出すタイミング　60〜79点=改善で伸びる　59点以下=要見直し",
                 (180, 140, 20),
             ),
             (
                 "DRMスコア（A〜D）",
-                "集客→教育→販売の導線設計の評価。A=すべて機能 / B=1〜2か所改善で大幅アップ / C=構造問題あり / D=根本見直し",
+                "「知る→信頼する→申し込む」という流れがサイトで自然に設計されているか、の評価です。",
+                "A=完璧な状態　B=あと一歩　C=構造に問題あり　D=根本から作り直しが必要",
                 BLUE_MID,
             ),
             (
-                "BrandZ 3軸スコア（各/10）",
-                "意味性=悩みに応えているか / 差別性=競合と違うか / 顕著性=真っ先に思い出されるか。3軸揃ってブランドパワーになる",
+                "BrandZ 3軸スコア（各10点）",
+                "ブランドの強さを「役に立つか」「他と違うか」「思い出されるか」の3点で採点します。",
+                "意味性=悩みに応える　差別性=他社と違う　顕著性=真っ先に思い浮かぶ　3つ揃って強いブランドに",
                 (100, 140, 80),
             ),
             (
-                "GEO総合スコア（/10）",
-                "ChatGPT・Gemini・ClaudeなどのAIに推薦・引用されやすいかの評価。7以上=AI引用されやすい / 3以下=AIに無視される状態",
+                "GEO総合スコア（10点満点）",
+                "ChatGPTやGeminiなどのAIに「おすすめを教えて」と聞かれたとき、紹介されやすいかの評価です。",
+                "7点以上=AIに紹介されやすい　4〜6点=普通　3点以下=AIに無視されている状態",
                 (80, 120, 180),
             ),
             (
-                "GEO 5ステップ評価（各/5）",
-                "S1構造化=数字・ファクト整理 / S2 How to=方法・手順コンテンツ / S3 Q&A=向いている人・いない人明記 / S4比較表=自社他社比較 / S5事例=数字入りビフォーアフター",
+                "GEO 5ステップ（各5点）",
+                "AI対策で必要な5つの要素を採点します。S1=数字で説明　S2=やり方コンテンツ　S3=Q&A　S4=比較表　S5=体験談",
+                "点数が低い項目から順に対策するとAIに評価されやすくなります",
                 (80, 120, 180),
             ),
             (
-                "11項目チェックリスト（AI必須要素）",
-                "①誰向け ②悩み解決 ③他社差 ④料金 ⑤対応エリア ⑥利用の流れ ⑦よくある質問 ⑧向いている人 ⑨向いていない人 ⑩お客様の声 ⑪事例 ⑫専門性の根拠。不足項目から順に追加するとAIに評価されやすくなる",
+                "11項目チェックリスト（AIが求める情報）",
+                "AIが「このサイトは信頼できる」と判断するために必要な情報が揃っているかのチェックです。",
+                "①誰向け ②悩み ③他社との差 ④料金 ⑤対応エリア ⑥利用の流れ ⑦Q&A ⑧向く人 ⑨向かない人 ⑩口コミ ⑪実績 ⑫専門資格",
                 (80, 120, 180),
             ),
         ]
 
-        for title, body, accent in guides:
+        # 固定高さカード（7枚 × 26mm = 182mm + ヘッダー約28mm = 210mm → 1ページに収まる）
+        card_h = 25
+        gap = 1
+        # 自動改ページを完全に無効化（_final_footer含めて1ページ内で完結させる）
+        self.set_auto_page_break(auto=False)
+
+        for title, body, criteria, accent in guides:
             y = self.get_y()
-            card_h = 19 + max(1, -(-len(body) // 50)) * 4.2 + 2
+            # カード背景
             self.set_fill_color(248, 244, 234)
             self.rect(lm, y, 180, card_h, style="F")
             self.set_fill_color(*accent)
             self.rect(lm, y, 3, card_h, style="F")
             self.set_fill_color(*GOLD)
-            self.rect(lm, y, 180, 0.5, style="F")
-            self.set_xy(lm + 7, y + 2.5)
-            self.set_font(self._font, "B", 8.5)
+            self.rect(lm, y, 155, 0.4, style="F")
+            # タイトル
+            self.set_xy(lm + 7, y + 2)
+            self.set_font(self._font, "B", 8)
             self.set_text_color(42, 36, 22)
-            self.cell(168, 5, title)
+            self.cell(165, 5, title)
+            # 区切り線
             self.set_fill_color(201, 169, 110)
-            self.rect(lm + 3, y + 9.5, 177, 0.3, style="F")
-            self.set_xy(lm + 7, y + 11.5)
-            self.set_font(self._font, "", 7.5)
+            self.rect(lm + 3, y + 8.5, 174, 0.25, style="F")
+            # ひと言解説
+            self.set_xy(lm + 7, y + 10)
+            self.set_font(self._font, "", 7)
             self.set_text_color(22, 18, 10)
-            self.set_auto_page_break(auto=False)
-            self.multi_cell(170, 4.2, body)
-            self.set_auto_page_break(auto=True, margin=22)
-            self.set_y(y + card_h + 2)
+            self.multi_cell(170, 3.8, body)
+            # 判断基準（細字・グレー）
+            self.set_xy(lm + 7, y + 18.5)
+            self.set_font(self._font, "", 6.5)
+            self.set_text_color(100, 90, 60)
+            self.multi_cell(170, 3.8, criteria)
+            self.set_y(y + card_h + gap)
 
         self.set_text_color(0, 0, 0)
+        # _final_footer は auto=False のまま描画（余分ページを生まない）
         self._final_footer()
+        self.set_auto_page_break(auto=True, margin=22)
 
     def cover_page(self, site_url: str, profession: str, page_count: int):
         self.set_auto_page_break(auto=False)
@@ -1205,7 +1320,7 @@ class _SitePDF(_Base):
             try:
                 char_path = _make_cover_char(_CHARACTER_PATH, bg=(8, 8, 8), fade_frac=0.45)
                 img = _PILImage.open(char_path)
-                char_h = 170  # ホワイトボードが見える高さ
+                char_h = 148  # ホワイトボードが見える高さ（小さめで下端が切れない）
                 char_w = round(char_h * img.width / img.height, 1)
                 self.image(char_path, x=210 - char_w, y=297 - char_h, w=char_w, h=char_h)
             except Exception:
@@ -1270,9 +1385,9 @@ def generate_site_pdf(
         rate_num = int(''.join(filter(str.isdigit, str(inquiry_rate))))
     except ValueError:
         rate_num = 0
-    if rate_num >= 15:
+    if rate_num >= 30:
         rate_color, rate_badge = GREEN_MID, "高水準"
-    elif rate_num >= 8:
+    elif rate_num >= 12:
         rate_color, rate_badge = (217, 119, 6), "標準"
     else:
         rate_color, rate_badge = (185, 28, 28), "要改善"
@@ -1312,7 +1427,7 @@ def generate_site_pdf(
     pdf.cell(rw, 13, str(inquiry_rate), align="C")
     gy = y0 + 27
     bw_g = rw - 16
-    fill_w = min(rate_num / 25.0, 1.0) * bw_g
+    fill_w = min(rate_num / 40.0, 1.0) * bw_g
     pdf.set_fill_color(35, 32, 25)
     pdf.rect(rx + 8, gy, bw_g, 3, style="F")
     if fill_w > 0:
@@ -1393,8 +1508,6 @@ def generate_site_pdf(
     y_w = y_sw + 10
     for w in weaknesses:
         txt = f"▲ {w.get('point', '')}\n   {w.get('reason', '')}"
-        if w.get("suggestion"):
-            txt += f"\n   → {w.get('suggestion', '')}"
         pdf.set_xy(wx, y_w)
         pdf.set_fill_color(255, 245, 243)
         pdf.set_text_color(*RED_T)
@@ -1544,11 +1657,21 @@ def generate_site_pdf(
     _meta_bar(pdf)
 
     pdf.section_bar(f"収集したページ一覧（全 {len(scraped_pages)} ページ）")
-    # 2列レイアウト
+    # 2列レイアウト（最大40ページ表示、ページオーバーフロー対応）
     col_pw = 86
-    for i, page in enumerate(scraped_pages[:30]):
+    display_pages = scraped_pages[:40]
+    for i, page in enumerate(display_pages):
         col_x = lm if i % 2 == 0 else lm + col_pw + 8
         if i % 2 == 0:
+            # 左列開始時にページ超えチェック
+            if (297 - pdf.get_y() - 22) < 14:
+                pdf.add_page()
+                _meta_bar(pdf)
+                pdf.set_font(pdf._font, "B", 8)
+                pdf.set_text_color(*GRAY)
+                pdf.cell(0, 5, f"（続き）収集ページ一覧")
+                pdf.ln(6)
+                pdf.set_text_color(0, 0, 0)
             y_row_p = pdf.get_y()
         y_p2 = y_row_p
         title = page.get("title", "（タイトルなし）")[:24]
@@ -1565,13 +1688,13 @@ def generate_site_pdf(
         pdf.set_font(pdf._font, "", 6.5)
         pdf.set_text_color(*GRAY)
         pdf.cell(col_pw - 6, 4, url)
-        if i % 2 == 1 or i == len(scraped_pages) - 1:
+        if i % 2 == 1 or i == len(display_pages) - 1:
             pdf.set_y(y_p2 + 14)
-    if len(scraped_pages) > 30:
+    if len(scraped_pages) > 40:
         pdf.set_font(pdf._font, "", 7.5)
         pdf.set_text_color(*GRAY)
         pdf.set_x(lm)
-        pdf.cell(0, 5, f"…他 {len(scraped_pages) - 30} ページ（合計 {len(scraped_pages)} ページ収集）")
+        pdf.cell(0, 5, f"…他 {len(scraped_pages) - 40} ページ（合計 {len(scraped_pages)} ページ収集）")
         pdf.ln(5)
     pdf.set_text_color(0, 0, 0)
 
