@@ -296,7 +296,7 @@ class _Base(FPDF):
         self.set_xy(0, y + 4)
         self.set_font(self._font, "B", 9.5)
         self.set_text_color(*GOLD)
-        self.cell(210, 6, "あなたのサイトを、選ばれる事務所へ。", align="C")
+        self.cell(210, 6, "あなたのサイトを 選ばれる存在へ。", align="C")
         self.set_xy(0, y + 12)
         self.set_font(self._font, "", 7.5)
         self.set_text_color(*WHITE)
@@ -1224,16 +1224,17 @@ class _SitePDF(_Base):
             self.multi_cell(152, 6.5, action)
             self.set_y(y_c + card_h + gap)
 
-        # 締めの一言
-        self.set_y(self.get_y() + 4)
-        self.set_fill_color(42, 36, 22)
-        self.rect(lm, self.get_y(), 180, 14, style="F")
+        # 締めの一言（バーなし・大きなゴールドテキストのみ）
+        self.set_y(self.get_y() + 10)
         self.set_fill_color(*GOLD)
-        self.rect(lm, self.get_y(), 180, 0.5, style="F")
-        self.set_xy(lm, self.get_y() + 3)
-        self.set_font(self._font, "B", 8)
+        self.rect(lm + 20, self.get_y(), 140, 0.4, style="F")
+        self.ln(4)
+        self.set_font(self._font, "B", 12)
         self.set_text_color(*GOLD)
-        self.cell(180, 8, "まず①だけ実行すれば、問い合わせ数は変わり始めます。", align="C")
+        self.cell(180, 9, "まず①だけ実行すれば、問い合わせ数は変わり始めます。", align="C")
+        self.ln(4)
+        self.set_fill_color(*GOLD)
+        self.rect(lm + 20, self.get_y(), 140, 0.4, style="F")
 
         self.set_text_color(0, 0, 0)
         self._final_footer()
@@ -1359,17 +1360,20 @@ class _SitePDF(_Base):
         self.rect(105 - 26, logo_y, 52, 0.2, style="F")
         logo_y += 6
 
-        # メインタイトル
-        self.set_xy(0, logo_y)
+        # メインタイトル（幅を絞って中央に締める）
+        _title_w = 150
+        self.set_xy((210 - _title_w) / 2, logo_y)
         self.set_font(self._font, "B", 20)
         self.set_text_color(*WHITE)
-        self.cell(210, 11, "サイト全体分析レポート", align="C")
+        self.cell(_title_w, 11, "サイト全体分析レポート", align="C")
         self.ln(8)
 
         # 英語サブタイトル
+        _sub_w = 130
+        self.set_xy((210 - _sub_w) / 2, self.get_y())
         self.set_font(self._font, "", 9)
         self.set_text_color(*GOLD)
-        self.cell(210, 5, "Website  Analysis  Report", align="C")
+        self.cell(_sub_w, 5, "Website  Analysis  Report", align="C")
         self.ln(6)
 
         # 区切りライン
@@ -1711,14 +1715,16 @@ def generate_site_pdf(
             issue_text = ni.get("issue", "")
             suggestion_text = ni.get("suggestion", "")
             page_name = ni.get("page", "")
-            # カード高さを事前計算
-            _i_lines = max(1, -(-len(issue_text) // 36))
-            _s_lines = max(1, -(-len(suggestion_text) // 40))
-            _card_h = 7 + _i_lines * 5.5 + 6 + _s_lines * 5.5 + 8
-            if (297 - pdf.get_y() - 22) < _card_h + 4:
+            # カード高さを保守的に推定（実際の折り返しに合わせて1行あたり文字数を少なめに）
+            _i_lines = max(1, -(-len(issue_text) // 26))
+            _s_lines = max(1, -(-len(suggestion_text) // 28))
+            _card_h = 7 + _i_lines * 5.5 + 10 + _s_lines * 5.5 + 10
+            if (297 - pdf.get_y() - 22) < _card_h + 6:
                 pdf.add_page()
                 _meta_bar(pdf)
             y_ni = pdf.get_y()
+            # カード内は改ページ禁止（テキスト飛び防止）
+            pdf.set_auto_page_break(auto=False)
             # ページ名バッジ（全幅）
             pdf.set_fill_color(42, 36, 22)
             pdf.rect(lm, y_ni, 180, 7, style="F")
@@ -1741,6 +1747,7 @@ def generate_site_pdf(
             pdf.set_text_color(22, 18, 10)
             pdf.multi_cell(180, 5.5, f"→ 改善提案: {suggestion_text}", fill=True, padding=(2, 4, 2, 8))
             pdf.set_y(pdf.get_y() + 5)
+            pdf.set_auto_page_break(auto=True, margin=22)
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
 
