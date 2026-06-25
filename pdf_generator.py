@@ -573,8 +573,8 @@ class _Base(FPDF):
             self.rect(lm, y, 3, card_h, style="F")
 
             # スコアバッジ（右側 — 大きめの円 + /10表記）
-            cx = lm + 171
-            cy = y + card_h / 2 - 3
+            cx = lm + 168
+            cy = y + card_h / 2
             r = 10
             self.set_fill_color(*accent)
             self.ellipse(cx - r, cy - r, r * 2, r * 2, style="F")
@@ -1226,15 +1226,10 @@ class _SitePDF(_Base):
 
         # 締めの一言（バーなし・大きなゴールドテキストのみ）
         self.set_y(self.get_y() + 10)
-        self.set_fill_color(*GOLD)
-        self.rect(lm + 20, self.get_y(), 140, 0.4, style="F")
-        self.ln(4)
+        self.ln(8)
         self.set_font(self._font, "B", 12)
         self.set_text_color(*GOLD)
         self.cell(180, 9, "まず①だけ実行すれば、問い合わせ数は変わり始めます。", align="C")
-        self.ln(4)
-        self.set_fill_color(*GOLD)
-        self.rect(lm + 20, self.get_y(), 140, 0.4, style="F")
 
         self.set_text_color(0, 0, 0)
         self._final_footer()
@@ -1392,21 +1387,29 @@ class _SitePDF(_Base):
         bw, bh = 182, 34
         url_w, score_w = 115, 67
 
-        # URL側（左）
-        self.set_fill_color(18, 16, 12)
-        self.rect(bx, by, url_w, bh, style="F")
+        # カード全体を同一背景色で描画（色の境界線をなくす）
+        _card_bg = (14, 12, 8)
+        self.set_fill_color(*_card_bg)
+        self.rect(bx, by, bw, bh, style="F")
+        # 上下ゴールドライン
         self.set_fill_color(*GOLD)
-        self.rect(bx, by, url_w, 0.3, style="F")
-        self.rect(bx, by + bh - 0.3, url_w, 0.3, style="F")
+        self.rect(bx, by, bw, 0.3, style="F")
+        self.rect(bx, by + bh - 0.3, bw, 0.3, style="F")
+        # 左アクセントライン
         self.rect(bx, by, 1.5, bh, style="F")
+        # 縦区切り線（URL/スコア境界）
+        sx = bx + url_w
+        self.rect(sx, by + 4, 0.3, bh - 8, style="F")
+
+        # URL側（左）
         self.set_xy(bx + 6, by + 5)
         self.set_font(self._font, "", 6)
         self.set_text_color(*GOLD)
         self.cell(url_w - 8, 4, "分析対象サイト")
         self.set_xy(bx + 6, by + 11)
-        self.set_font(self._font, "B", 7.5)
+        self.set_font(self._font, "B", 6.5)
         self.set_text_color(*WHITE)
-        url_disp = site_url[:38] + ("…" if len(site_url) > 38 else "")
+        url_disp = site_url[:46] + ("…" if len(site_url) > 46 else "")
         self.cell(url_w - 8, 5.5, url_disp)
         self.set_xy(bx + 6, by + 22)
         self.set_font(self._font, "", 6.5)
@@ -1416,28 +1419,22 @@ class _SitePDF(_Base):
         # スコア側（右）
         ps_col = GREEN_MID if power_score >= 70 else ((217, 119, 6) if power_score >= 50 else (185, 28, 28))
         ps_str = "広告投下タイミング" if power_score >= 70 else ("改善で伸びる" if power_score >= 50 else "要見直し")
-        sx = bx + url_w + 1
-        self.set_fill_color(12, 10, 6)
-        self.rect(sx, by, score_w, bh, style="F")
-        self.set_fill_color(*ps_col)
-        self.rect(sx, by, score_w, 0.3, style="F")
-        self.rect(sx, by + bh - 0.3, score_w, 0.3, style="F")
-        self.rect(sx + score_w - 0.3, by, 0.3, bh, style="F")
-        self.set_xy(sx, by + 4)
+        sx2 = sx + 2
+        self.set_xy(sx2, by + 4)
         self.set_font(self._font, "", 6)
         self.set_text_color(155, 143, 96)
-        self.cell(score_w, 4, "AI 総合パワースコア", align="C")
-        self.set_xy(sx, by + 9)
+        self.cell(score_w - 2, 4, "AI 総合パワースコア", align="C")
+        self.set_xy(sx2, by + 9)
         self.set_font(self._font, "B", 24)
         self.set_text_color(*ps_col)
-        self.cell(score_w - 10, 12, f"{power_score}", align="R")
+        self.cell(score_w - 12, 12, f"{power_score}", align="R")
         self.set_font(self._font, "", 9)
         self.set_text_color(155, 143, 96)
         self.cell(10, 12, "/100")
-        self.set_xy(sx, by + 26)
+        self.set_xy(sx2, by + 26)
         self.set_font(self._font, "B", 6.5)
         self.set_text_color(*ps_col)
-        self.cell(score_w, 5, ps_str, align="C")
+        self.cell(score_w - 2, 5, ps_str, align="C")
 
         # 作成日
         self.set_y(by + bh + 9)
