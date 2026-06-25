@@ -537,7 +537,7 @@ class _Base(FPDF):
             self.set_fill_color(248, 244, 234)
             self.rect(lm, y, 180, card_h, style="F")
             self.set_fill_color(*GOLD)
-            self.rect(lm, y, 155, 0.8, style="F")  # スコア円の手前で止める
+            self.rect(lm, y, 180, 0.8, style="F")  # 太い上線は端から端まで
             self.set_fill_color(*accent)
             self.rect(lm, y, 3, card_h, style="F")
 
@@ -565,9 +565,9 @@ class _Base(FPDF):
             self.set_xy(lm + 7, y + 8.5)
             self.cell(150, 4, sub)
 
-            # 区切り線
+            # 区切り線（スコア円の手前で止める）
             self.set_fill_color(201, 169, 110)
-            self.rect(lm + 3, y + 13.5, 177, 0.3, style="F")
+            self.rect(lm + 3, y + 13.5, 153, 0.3, style="F")
 
             # コメント（スコア円と重ならないよう幅を調整）
             self.set_auto_page_break(auto=False)
@@ -631,21 +631,21 @@ class _Base(FPDF):
         self.set_line_width(0.7)
         self.polygon(score_pts, style="FD")
 
-        # 各頂点ラベルとスコア値
-        label_r = r + 13
+        # 各頂点ラベルとスコア値（ラベルを近づけてフォント大きめ）
+        label_r = r + 9
         for i, (label, a) in enumerate(zip(labels, angles)):
             lx = cx + label_r * math.cos(a)
             ly = cy + label_r * math.sin(a)
             # 上端ラベルは少し上にずらす
             offset_y = -3 if i == 0 else (-1 if i in (1, 4) else 1)
-            self.set_font(self._font, "", 6)
-            self.set_text_color(80, 70, 50)
-            self.set_xy(lx - 18, ly + offset_y - 4.5)
-            self.cell(36, 4, label, align="C")
-            self.set_font(self._font, "B", 8.5)
+            self.set_font(self._font, "B", 7.5)
+            self.set_text_color(60, 50, 30)
+            self.set_xy(lx - 20, ly + offset_y - 5)
+            self.cell(40, 4.5, label, align="C")
+            self.set_font(self._font, "B", 9)
             self.set_text_color(*GOLD)
-            self.set_xy(lx - 18, ly + offset_y)
-            self.cell(36, 4.5, f"{safe_scores[i]} / 5", align="C")
+            self.set_xy(lx - 20, ly + offset_y - 0.5)
+            self.cell(40, 5, f"{safe_scores[i]} / 5", align="C")
 
         self.set_text_color(0, 0, 0)
         self.set_line_width(0.2)
@@ -686,8 +686,8 @@ class _Base(FPDF):
         ]
         if step_scores:
             chart_y = self.get_y()
-            chart_area_h = 76  # 五角形エリアの高さ
-            chart_area_w = 92  # 左カラム幅
+            chart_area_h = 88  # 五角形エリアの高さ（ラベルが収まるよう広げる）
+            chart_area_w = 96  # 左カラム幅
 
             # 背景
             self.set_fill_color(248, 244, 234)
@@ -697,16 +697,16 @@ class _Base(FPDF):
 
             # 五角形チャート（左エリアの中央）
             pentagon_cx = lm + chart_area_w / 2
-            pentagon_cy = chart_y + chart_area_h / 2 + 3
-            pentagon_r = 26
+            pentagon_cy = chart_y + chart_area_h / 2 + 5
+            pentagon_r = 27
 
             score_vals = [step_scores.get(key, 0) for _, key in steps]
             step_labels = [label for label, _ in steps]
             self._draw_geo_pentagon(pentagon_cx, pentagon_cy, pentagon_r, score_vals, step_labels)
 
             # 右エリア: 5ステップのスコアバー一覧
-            rx = lm + chart_area_w + 4
-            rw = 180 - chart_area_w - 4
+            rx = lm + chart_area_w + 3
+            rw = 180 - chart_area_w - 3
             step_full_labels = ["S1 構造化（数字・ファクト整理）", "S2 How to（方法・手順コンテンツ）", "S3 Q&A（向く人/向かない人）", "S4 比較表（自社他社比較）", "S5 事例（数字入りビフォーアフター）"]
             for i, ((label, key), full_label) in enumerate(zip(steps, step_full_labels)):
                 iy = chart_y + 6 + i * 14
@@ -1126,19 +1126,8 @@ class _SitePDF(_Base):
         self.set_text_color(0, 0, 0)
 
     def _fill_page_bottom(self):
-        """ページ下部の余白にブランド名テキストのみを表示（フッターのゴールドラインと二重にならないよう線は描かない）。"""
-        remaining = 297 - self.get_y() - 22
-        if remaining < 20:
-            return
-        y_text = self.get_y() + max(6, remaining * 0.4)
-        # テキストが自動改ページを起こさないか確認
-        if y_text + 4 > 297 - 22:
-            return
-        self.set_xy(0, y_text)
-        self.set_font(self._font, "", 6.5)
-        self.set_text_color(140, 128, 88)
-        self.cell(210, 4, "LIFE DESIGN LAB  ·  TODOKU  ·  サイト改善支援サービス", align="C")
-        self.set_text_color(0, 0, 0)
+        """ページ下部の余白処理（現在は空白のまま残す）。"""
+        pass
 
     def guide_page(self):
         """各スコア・指標の見方を解説するガイドページ（1ページ収録・大学生でもわかる言葉）。"""
