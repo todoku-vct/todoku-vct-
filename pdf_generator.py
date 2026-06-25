@@ -326,9 +326,40 @@ class _Base(FPDF):
         score, score_color, desc = self._drm_score_colors(mi)
 
         self.section_bar("マーケティング総合評価（DRM：ダイレクトレスポンスマーケティング）")
+        lm = self.l_margin
+
+        # ── DRM 3ステップ フロービジュアル ──
+        flow_y = self.get_y()
+        flow_steps = [
+            ("集客", "認知・アクセス獲得", GREEN_MID),
+            ("教育", "信頼・ファン化", BLUE_MID),
+            ("販売", "問合せ・成約", GOLD),
+        ]
+        step_w, arrow_w, flow_h = 50, 10, 24
+        total_w = step_w * 3 + arrow_w * 2
+        sx_start = lm + (180 - total_w) / 2
+        for i, (label, sub, color) in enumerate(flow_steps):
+            sx = sx_start + i * (step_w + arrow_w)
+            self.set_fill_color(*color)
+            self.rect(sx, flow_y, step_w, flow_h, style="F")
+            self.set_fill_color(255, 255, 255)
+            self.rect(sx, flow_y + flow_h - 1.5, step_w, 1.5, style="F")
+            self.set_xy(sx, flow_y + 3.5)
+            self.set_font(self._font, "B", 16)
+            self.set_text_color(*WHITE)
+            self.cell(step_w, 9, label, align="C")
+            self.set_xy(sx, flow_y + 13.5)
+            self.set_font(self._font, "", 6.5)
+            self.set_text_color(*WHITE)
+            self.cell(step_w, 5, sub, align="C")
+            if i < 2:
+                self.set_xy(sx_start + (i + 1) * step_w + i * arrow_w, flow_y + 7)
+                self.set_font(self._font, "B", 13)
+                self.set_text_color(*GOLD)
+                self.cell(arrow_w, 10, ">", align="C")
+        self.set_y(flow_y + flow_h + 5)
 
         # DRM解説ボックス（動的高さ）
-        lm = self.l_margin
         ex_y = self.get_y()
         _drm_explain = (
             "集客・教育・販売の3ステップで見込み客を顧客へと育てるマーケティング手法です。"
@@ -1430,37 +1461,66 @@ def generate_site_pdf(
     pdf.set_y(y0 + hero_h + 6)
     pdf.set_text_color(0, 0, 0)
 
-    # ── AI 総合パワースコア ──
+    # ── AI 総合パワースコア（大型ビジュアル）──
     total_ps, drm_pts, bz_pts, geo_pts = _calc_power_score(site_report)
     ps_color = GREEN_MID if total_ps >= 70 else ((217, 119, 6) if total_ps >= 50 else (185, 28, 28))
+    ps_label = "広告投下タイミング" if total_ps >= 70 else ("改善で大きく伸びる" if total_ps >= 50 else "要見直し")
     y_ps = pdf.get_y()
+    ps_bar_h = 30
     pdf.set_fill_color(42, 36, 22)
-    pdf.rect(lm, y_ps, 180, 16, style="F")
+    pdf.rect(lm, y_ps, 180, ps_bar_h, style="F")
     pdf.set_fill_color(*ps_color)
-    pdf.rect(lm, y_ps, 180, 0.8, style="F")
-    pdf.set_xy(lm + 6, y_ps + 2.5)
+    pdf.rect(lm, y_ps, 180, 1.5, style="F")
+    # 大きなスコア数値（左エリア）
+    pdf.set_xy(lm + 4, y_ps + 3)
     pdf.set_font(pdf._font, "", 7)
     pdf.set_text_color(160, 148, 100)
-    pdf.cell(50, 4, "AI 総合パワースコア")
-    pdf.set_xy(lm + 6, y_ps + 7)
-    pdf.set_font(pdf._font, "B", 15)
+    pdf.cell(70, 4, "AI 総合パワースコア")
+    pdf.set_xy(lm + 4, y_ps + 8)
+    pdf.set_font(pdf._font, "B", 22)
     pdf.set_text_color(*ps_color)
-    pdf.cell(20, 7, f"{total_ps}")
-    pdf.set_font(pdf._font, "", 8)
+    pdf.cell(26, 13, f"{total_ps}")
+    pdf.set_font(pdf._font, "", 9)
     pdf.set_text_color(160, 148, 100)
-    pdf.cell(18, 7, "/ 100")
-    x_sub = lm + 80
-    for sub_l, sub_v in [("DRM", f"{drm_pts}/30"), ("BrandZ", f"{bz_pts}/40"), ("GEO", f"{geo_pts}/30")]:
-        pdf.set_xy(x_sub, y_ps + 3)
+    pdf.cell(14, 13, "/ 100")
+    # ステータスラベル
+    pdf.set_xy(lm + 4, y_ps + ps_bar_h - 7)
+    pdf.set_font(pdf._font, "B", 7)
+    pdf.set_text_color(*ps_color)
+    pdf.cell(70, 4.5, f"▶ {ps_label}")
+    # プログレスバー（スコア／100）
+    pb_x, pb_y, pb_w, pb_h = lm + 4, y_ps + ps_bar_h - 2.5, 68, 2
+    pdf.set_fill_color(60, 52, 35)
+    pdf.rect(pb_x, pb_y, pb_w, pb_h, style="F")
+    pdf.set_fill_color(*ps_color)
+    pdf.rect(pb_x, pb_y, pb_w * total_ps / 100, pb_h, style="F")
+    # 区切り縦線
+    pdf.set_fill_color(70, 62, 45)
+    pdf.rect(lm + 82, y_ps + 4, 0.3, ps_bar_h - 8, style="F")
+    # サブスコア（右3列）
+    x_sub = lm + 86
+    for sub_l, sub_v, sub_max in [("DRM", drm_pts, 30), ("BrandZ", bz_pts, 40), ("GEO", geo_pts, 30)]:
+        pdf.set_xy(x_sub, y_ps + 4)
         pdf.set_font(pdf._font, "", 6.5)
         pdf.set_text_color(140, 128, 90)
         pdf.cell(30, 4, sub_l, align="C")
-        pdf.set_xy(x_sub, y_ps + 8)
-        pdf.set_font(pdf._font, "B", 9)
+        pdf.set_xy(x_sub, y_ps + 9)
+        pdf.set_font(pdf._font, "B", 12)
         pdf.set_text_color(*GOLD)
-        pdf.cell(30, 5.5, sub_v, align="C")
+        pdf.cell(30, 7, f"{sub_v}", align="C")
+        pdf.set_xy(x_sub, y_ps + 17)
+        pdf.set_font(pdf._font, "", 6)
+        pdf.set_text_color(100, 90, 60)
+        pdf.cell(30, 4, f"/ {sub_max}点", align="C")
+        # ミニバー
+        mb_x = x_sub + 3
+        mb_w = 24
+        pdf.set_fill_color(60, 52, 35)
+        pdf.rect(mb_x, y_ps + 22, mb_w, 1.5, style="F")
+        pdf.set_fill_color(*GOLD)
+        pdf.rect(mb_x, y_ps + 22, mb_w * sub_v / sub_max, 1.5, style="F")
         x_sub += 32
-    pdf.set_y(y_ps + 20)
+    pdf.set_y(y_ps + ps_bar_h + 4)
     pdf.set_text_color(0, 0, 0)
 
     # ── 強み / 弱み ──
@@ -1495,14 +1555,29 @@ def generate_site_pdf(
     pdf.set_xy(wx + 5, y_sw + 2)
     pdf.cell(col_w - 8, 4.5, "▲  弱み・改善点")
     y_w = y_sw + 10
-    for w in weaknesses:
+    _priority_labels = ["最優先", "優先対応", "改善推奨"]
+    _priority_colors = [(185, 28, 28), (217, 119, 6), (100, 100, 80)]
+    for i, w in enumerate(weaknesses):
+        p_idx = min(i, 2)
+        p_label = _priority_labels[p_idx]
+        p_color = _priority_colors[p_idx]
         txt = f"▲ {w.get('point', '')}\n   {w.get('reason', '')}"
         pdf.set_xy(wx, y_w)
         pdf.set_fill_color(255, 245, 243)
         pdf.set_text_color(*RED_T)
         pdf.set_font(pdf._font, "", 8)
         pdf.multi_cell(col_w, 5, txt, fill=True, padding=(3, 4, 3, 4))
-        y_w = pdf.get_y() + 3
+        end_y = pdf.get_y()
+        # 優先度バッジを右上隅に重ねて描画
+        badge_w = 22
+        pdf.set_fill_color(*p_color)
+        pdf.rect(wx + col_w - badge_w, y_w, badge_w, 6.5, style="F")
+        pdf.set_xy(wx + col_w - badge_w, y_w + 1)
+        pdf.set_font(pdf._font, "B", 6)
+        pdf.set_text_color(*WHITE)
+        pdf.cell(badge_w, 4.5, p_label, align="C")
+        pdf.set_text_color(*RED_T)
+        y_w = end_y + 3
     y_after_w = y_w
 
     pdf.set_y(max(y_after_s, y_after_w) + 6)
