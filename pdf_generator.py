@@ -1341,50 +1341,51 @@ class _SitePDF(_Base):
         self.rect(0, 0, 210, 297, style="F")
 
         # ━━ ② テキスト（全幅中央揃え） ━━  ※キャラより先に描画
-        logo_y = 36
+        # ロゴを上に詰めてURLカードがキャラ画像と被らないようにする
+        logo_y = 12
         if os.path.exists(_LOGO_PATH):
-            logo_size = 46
+            logo_size = 36
             self.image(_to_rgb_path(_LOGO_PATH, bg=(8,8,8)), x=105 - logo_size / 2, y=logo_y, w=logo_size)
-            logo_y += logo_size + 6
+            logo_y += logo_size + 4
         else:
-            self.set_y(logo_y + 6)
+            self.set_y(logo_y + 4)
             self.set_font(self._font, "B", 12)
             self.set_text_color(*GOLD)
             self.cell(210, 8, "LIFE DESIGN LAB", align="C")
-            logo_y += 24
+            logo_y += 20
 
         # 区切りライン
         self.set_fill_color(*GOLD)
-        self.rect(105 - 28, logo_y, 56, 0.2, style="F")
-        logo_y += 8
+        self.rect(105 - 26, logo_y, 52, 0.2, style="F")
+        logo_y += 6
 
         # メインタイトル
         self.set_xy(0, logo_y)
-        self.set_font(self._font, "B", 24)
+        self.set_font(self._font, "B", 20)
         self.set_text_color(*WHITE)
-        self.cell(210, 14, "サイト全体分析レポート", align="C")
-        self.ln(12)
+        self.cell(210, 11, "サイト全体分析レポート", align="C")
+        self.ln(8)
 
         # 英語サブタイトル
         self.set_font(self._font, "", 9)
         self.set_text_color(*GOLD)
-        self.cell(210, 6, "Website  Analysis  Report", align="C")
-        self.ln(9)
+        self.cell(210, 5, "Website  Analysis  Report", align="C")
+        self.ln(6)
 
         # 区切りライン
         self.set_fill_color(*GOLD)
-        self.rect(105 - 28, self.get_y(), 56, 0.2, style="F")
-        self.ln(9)
+        self.rect(105 - 26, self.get_y(), 52, 0.2, style="F")
+        self.ln(7)
 
         # キャプション
         self.set_font(self._font, "", 7)
         self.set_text_color(155, 143, 96)
-        self.cell(210, 5, "仮想顧客テスト  ·  Powered by Claude AI", align="C")
+        self.cell(210, 4, "仮想顧客テスト  ·  Powered by Claude AI", align="C")
 
-        # URLカード（左: URL情報 / 右: パワースコア）
-        self.ln(14)
+        # URLカード（左: URL情報 / 右: パワースコア）— キャラ上端(y≈149mm)より上に収まるよう間隔を詰める
+        self.ln(10)
         bx, by = 14, self.get_y()
-        bw, bh = 182, 40
+        bw, bh = 182, 34
         url_w, score_w = 115, 67
 
         # URL側（左）
@@ -1394,16 +1395,16 @@ class _SitePDF(_Base):
         self.rect(bx, by, url_w, 0.3, style="F")
         self.rect(bx, by + bh - 0.3, url_w, 0.3, style="F")
         self.rect(bx, by, 1.5, bh, style="F")
-        self.set_xy(bx + 6, by + 6)
+        self.set_xy(bx + 6, by + 5)
         self.set_font(self._font, "", 6)
         self.set_text_color(*GOLD)
         self.cell(url_w - 8, 4, "分析対象サイト")
-        self.set_xy(bx + 6, by + 12)
+        self.set_xy(bx + 6, by + 11)
         self.set_font(self._font, "B", 7.5)
         self.set_text_color(*WHITE)
         url_disp = site_url[:38] + ("…" if len(site_url) > 38 else "")
         self.cell(url_w - 8, 5.5, url_disp)
-        self.set_xy(bx + 6, by + 26)
+        self.set_xy(bx + 6, by + 22)
         self.set_font(self._font, "", 6.5)
         self.set_text_color(155, 143, 96)
         self.cell(url_w - 8, 5, f"ジャンル: {profession}  ·  {page_count}ページ収集")
@@ -1418,18 +1419,18 @@ class _SitePDF(_Base):
         self.rect(sx, by, score_w, 0.3, style="F")
         self.rect(sx, by + bh - 0.3, score_w, 0.3, style="F")
         self.rect(sx + score_w - 0.3, by, 0.3, bh, style="F")
-        self.set_xy(sx, by + 5)
+        self.set_xy(sx, by + 4)
         self.set_font(self._font, "", 6)
         self.set_text_color(155, 143, 96)
         self.cell(score_w, 4, "AI 総合パワースコア", align="C")
-        self.set_xy(sx, by + 10)
-        self.set_font(self._font, "B", 26)
+        self.set_xy(sx, by + 9)
+        self.set_font(self._font, "B", 24)
         self.set_text_color(*ps_col)
-        self.cell(score_w - 10, 14, f"{power_score}", align="R")
+        self.cell(score_w - 10, 12, f"{power_score}", align="R")
         self.set_font(self._font, "", 9)
         self.set_text_color(155, 143, 96)
-        self.cell(10, 14, "/100")
-        self.set_xy(sx, by + 30)
+        self.cell(10, 12, "/100")
+        self.set_xy(sx, by + 26)
         self.set_font(self._font, "B", 6.5)
         self.set_text_color(*ps_col)
         self.cell(score_w, 5, ps_str, align="C")
@@ -1667,23 +1668,30 @@ def generate_site_pdf(
         p_idx = min(i, 2)
         p_label = _priority_labels[p_idx]
         p_color = _priority_colors[p_idx]
-        txt = f"▲ {w.get('point', '')}\n   {w.get('reason', '')}"
-        pdf.set_xy(wx, y_w)
-        pdf.set_fill_color(255, 245, 243)
-        pdf.set_text_color(*RED_T)
-        pdf.set_font(pdf._font, "", 8)
-        pdf.multi_cell(col_w, 5, txt, fill=True, padding=(3, 4, 3, 4))
-        end_y = pdf.get_y()
-        # 優先度バッジを右上隅に重ねて描画
-        badge_w = 22
+        point  = w.get('point', '')
+        reason = w.get('reason', '')
+        y_card = y_w
+        header_h = 7
+        # ヘッダー行: 左=バッジ(色付き) / 右=ポイントタイトル
         pdf.set_fill_color(*p_color)
-        pdf.rect(wx + col_w - badge_w, y_w, badge_w, 6.5, style="F")
-        pdf.set_xy(wx + col_w - badge_w, y_w + 1)
-        pdf.set_font(pdf._font, "B", 6)
+        pdf.rect(wx, y_card, 26, header_h, style="F")
+        pdf.set_fill_color(255, 232, 230)
+        pdf.rect(wx + 26, y_card, col_w - 26, header_h, style="F")
+        pdf.set_xy(wx, y_card + 1)
+        pdf.set_font(pdf._font, "B", 6.5)
         pdf.set_text_color(*WHITE)
-        pdf.cell(badge_w, 4.5, p_label, align="C")
+        pdf.cell(26, 5, p_label, align="C")
+        pdf.set_xy(wx + 28, y_card + 1)
+        pdf.set_font(pdf._font, "B", 7.5)
         pdf.set_text_color(*RED_T)
-        y_w = end_y + 3
+        pdf.cell(col_w - 30, 5, f"▲ {point}")
+        # ボディ行: 理由テキスト
+        pdf.set_xy(wx, y_card + header_h)
+        pdf.set_fill_color(255, 245, 243)
+        pdf.set_text_color(140, 40, 40)
+        pdf.set_font(pdf._font, "", 7.5)
+        pdf.multi_cell(col_w, 4.5, f"  {reason}", fill=True, padding=(2, 4, 3, 4))
+        y_w = pdf.get_y() + 3
     y_after_w = y_w
 
     pdf.set_y(max(y_after_s, y_after_w) + 6)
