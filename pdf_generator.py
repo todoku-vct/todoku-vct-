@@ -1359,15 +1359,13 @@ class _SitePDF(_Base):
         _ty = 57  # タイトルテキストの上端 y
         self.set_fill_color(*GOLD)
         self.rect(105 - 26, _ty - 5, 52, 0.2, style="F")   # 上区切り線
-        self.set_x(0)
-        self.set_y(_ty)
+        self.set_xy(0, _ty)
         self.set_font(self._font, "B", 20)
         self.set_text_color(*WHITE)
         self.cell(210, 11, "サイト全体分析レポート", align="C")
         self.set_fill_color(*GOLD)
         self.rect(105 - 26, _ty + 14, 52, 0.2, style="F")  # 下区切り線
-        self.set_x(0)
-        self.set_y(_ty + 20)
+        self.set_xy(0, _ty + 20)
         self.set_font(self._font, "", 7)
         self.set_text_color(155, 143, 96)
         self.cell(210, 4, "仮想顧客テスト  ·  Powered by Claude AI", align="C")
