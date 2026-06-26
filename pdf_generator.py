@@ -2144,12 +2144,31 @@ body {
 </div>
 </body></html>"""
 
+_chromium_ready = False
+
+def _ensure_chromium() -> None:
+    """Chromiumがなければ自動インストール（Streamlit Cloud対応）。"""
+    global _chromium_ready
+    if _chromium_ready:
+        return
+    import subprocess, sys
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium", "--with-deps"],
+            capture_output=True, timeout=180,
+        )
+    except Exception:
+        pass
+    _chromium_ready = True
+
+
 def _render_html_to_pdf(html: str) -> bytes | None:
     """PlaywrightでHTMLをA4 PDFに変換。失敗時はNone。"""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         return None
+    _ensure_chromium()
     try:
         with sync_playwright() as p:
             kwargs = {"args": ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]}
