@@ -1359,11 +1359,11 @@ class _SitePDF(_Base):
         _ty = 57  # タイトルテキストの上端 y
         self.set_fill_color(*GOLD)
         self.rect(105 - 26, _ty - 5, 52, 0.2, style="F")   # 上区切り線
-        _title_w = 150
-        self.set_xy((210 - _title_w) / 2, _ty)
+        self.set_x(0)
+        self.set_y(_ty)
         self.set_font(self._font, "B", 20)
         self.set_text_color(*WHITE)
-        self.cell(_title_w, 11, "サイト全体分析レポート", align="C")
+        self.cell(210, 11, "サイト全体分析レポート", align="C")
         self.set_fill_color(*GOLD)
         self.rect(105 - 26, _ty + 14, 52, 0.2, style="F")  # 下区切り線
         self.set_x(0)
@@ -1659,23 +1659,29 @@ def generate_site_pdf(
         p_idx = min(i, 2)
         p_label = _priority_labels[p_idx]
         p_color = _priority_colors[p_idx]
-        point  = w.get('point', '')
-        reason = w.get('reason', '')
+        point  = w.get('point', '').strip()
+        reason = w.get('reason', '').strip()
         y_card = y_w
-        header_h = 7
-        # ヘッダー行: 左=バッジ(色付き) / 右=ポイントタイトル
+        # タイトル折り返し行数を事前推定（3mm/char @ 7pt、超保守的）
+        _pt_cpl = max(1, (col_w - 34) // 3)
+        _pt_lines = max(1, -(-len(point) // _pt_cpl))
+        header_h = max(7, 2 + _pt_lines * 4.5 + 1.5)
+        # バッジ（色付き・動的高さ）
         pdf.set_fill_color(*p_color)
         pdf.rect(wx, y_card, 26, header_h, style="F")
+        # タイトル背景
         pdf.set_fill_color(255, 232, 230)
         pdf.rect(wx + 26, y_card, col_w - 26, header_h, style="F")
-        pdf.set_xy(wx, y_card + 1)
+        # バッジテキスト（縦中央）
+        pdf.set_xy(wx, y_card + (header_h - 5) / 2)
         pdf.set_font(pdf._font, "B", 6.5)
         pdf.set_text_color(*WHITE)
         pdf.cell(26, 5, p_label, align="C")
-        pdf.set_xy(wx + 28, y_card + 1)
-        pdf.set_font(pdf._font, "B", 7.5)
+        # タイトルテキスト（折り返し対応）
+        pdf.set_xy(wx + 28, y_card + 1.5)
+        pdf.set_font(pdf._font, "B", 7)
         pdf.set_text_color(*RED_T)
-        pdf.cell(col_w - 30, 5, f"▲ {point}")
+        pdf.multi_cell(col_w - 30, 4.5, f"▲ {point}", padding=(0, 2, 0, 2))
         # ボディ行: 理由テキスト
         pdf.set_xy(wx, y_card + header_h)
         pdf.set_fill_color(255, 245, 243)
