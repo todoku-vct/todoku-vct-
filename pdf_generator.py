@@ -1535,8 +1535,6 @@ def generate_site_pdf(
     rx, rw = lm + left_w + 4, 64
     pdf.set_fill_color(42, 36, 22)
     pdf.rect(rx, y0 + 1.5, rw, hero_h - 1.5, style="F")
-    pdf.set_fill_color(*rate_color)
-    pdf.rect(rx, y0 + 1.5, rw, 1.5, style="F")
     pdf.set_xy(rx, y0 + 6)
     pdf.set_font(pdf._font, "", 7)
     pdf.set_text_color(160, 148, 100)
@@ -1712,7 +1710,6 @@ def generate_site_pdf(
                 pdf.add_page()
                 _meta_bar(pdf)
             y_ni = pdf.get_y()
-            pdf.set_auto_page_break(auto=False)
             # ページ名バッジ（全幅）
             pdf.set_fill_color(42, 36, 22)
             pdf.rect(lm, y_ni, 180, 7, style="F")
@@ -1722,19 +1719,26 @@ def generate_site_pdf(
             pdf.set_font(pdf._font, "B", 8)
             pdf.set_text_color(*GOLD)
             pdf.cell(168, 4, page_name[:35])
-            # 問題テキスト（折り返し対応）
+            # 問題テキスト
             pdf.set_xy(lm, y_ni + 8)
             pdf.set_font(pdf._font, "B", 8.5)
             pdf.set_text_color(*RED_T)
             pdf.set_fill_color(255, 245, 245)
             pdf.multi_cell(180, 5.5, issue_text, fill=True, padding=(2, 4, 2, 4))
-            # 改善提案ボックス（折り返し対応）
-            pdf.set_xy(lm, pdf.get_y() + 2)
-            pdf.set_fill_color(248, 244, 234)
+            # 改善提案ラベル行（細い帯）
+            y_sug = pdf.get_y() + 2
+            pdf.set_fill_color(220, 205, 150)
+            pdf.rect(lm, y_sug, 180, 5, style="F")
+            pdf.set_xy(lm + 4, y_sug + 0.5)
+            pdf.set_font(pdf._font, "B", 6.5)
+            pdf.set_text_color(60, 40, 10)
+            pdf.cell(172, 4, "改善提案")
+            # 改善提案本文（プレフィックスなし・全幅）
+            pdf.set_xy(lm, y_sug + 5)
+            pdf.set_fill_color(252, 247, 232)
             pdf.set_font(pdf._font, "", 8)
             pdf.set_text_color(22, 18, 10)
-            pdf.multi_cell(180, 5.5, f"→ 改善提案: {suggestion_text}", fill=True, padding=(2, 4, 2, 8))
-            pdf.set_auto_page_break(auto=True, margin=22)
+            pdf.multi_cell(180, 5.5, suggestion_text, fill=True, padding=(2, 6, 2, 6))
             pdf.set_y(pdf.get_y() + 5)
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
