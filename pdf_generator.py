@@ -1898,3 +1898,225 @@ def generate_site_pdf(
     # ─────────────────────────────────────────────
     pdf.guide_page()
     return bytes(pdf.output())
+
+
+# ─────────────────────────────────────────────────────────────────
+# 簡略版サマリーPDF（1ページ・無料配布用）
+# ─────────────────────────────────────────────────────────────────
+def generate_summary_pdf(
+    site_report: dict,
+    site_url: str = "",
+    profession: str = "",
+    device_label: str = "💻 PC",
+) -> bytes:
+    """診断結果の要点だけを1枚にまとめた簡略版PDF。無料配布・メール添付用。"""
+    font_r, font_b = _resolve_font()
+
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    if font_r:
+        pdf.add_font("F", "", font_r)
+        pdf.add_font("F", "B", font_b or font_r)
+        fn = "F"
+    else:
+        fn = "helvetica"
+
+    W, lm, rm = 210, 12, 12
+    inner = W - lm - rm
+    now = datetime.now().strftime("%Y年%m月%d日")
+
+    # ── ヘッダーバー ─────────────────────────
+    pdf.set_fill_color(*NAVY_DARK)
+    pdf.rect(0, 0, W, 38, style="F")
+    pdf.set_fill_color(*GOLD)
+    pdf.rect(0, 0, W, 2, style="F")
+
+    pdf.set_xy(lm, 5)
+    pdf.set_font(fn, "B", 7)
+    pdf.set_text_color(*GOLD)
+    pdf.cell(inner, 5, "LIFE DESIGN LAB  ·  トドク VCT  無料サイト診断レポート")
+
+    pdf.set_xy(lm, 11)
+    pdf.set_font(fn, "B", 16)
+    pdf.set_text_color(*WHITE)
+    title_text = f"{profession}  サイト診断サマリー" if profession else "サイト診断サマリー"
+    pdf.cell(inner, 9, title_text)
+
+    pdf.set_xy(lm, 22)
+    pdf.set_font(fn, "", 7)
+    pdf.set_text_color(180, 170, 140)
+    url_disp = (site_url[:70] + "...") if len(site_url) > 70 else site_url
+    _device_clean = device_label.replace("💻", "PC").replace("📱", "SP")
+    pdf.cell(inner, 5, f"対象URL: {url_disp}  |  {_device_clean}  |  {now}")
+
+    pdf.set_xy(lm, 29)
+    pdf.set_font(fn, "", 7)
+    pdf.set_text_color(160, 150, 120)
+    pdf.cell(inner, 5, "本レポートはAIシンセティックデータ（仮想顧客）による推定です。実際の数値は異なる場合があります。")
+
+    # ── 推定問い合わせ率 ─────────────────────
+    rate = site_report.get("inquiry_rate", "—")
+    try:
+        rate_num = int("".join(c for c in rate if c.isdigit()))
+    except Exception:
+        rate_num = 0
+    rate_color = GREEN_MID if rate_num >= 50 else (AMBER_T if rate_num >= 30 else RED_T)
+
+    pdf.set_fill_color(245, 243, 238)
+    pdf.rect(lm, 42, inner, 26, style="F")
+    pdf.set_fill_color(*rate_color)
+    pdf.rect(lm, 42, 3, 26, style="F")
+
+    pdf.set_xy(lm + 7, 44)
+    pdf.set_font(fn, "", 7)
+    pdf.set_text_color(120, 110, 90)
+    pdf.cell(60, 5, "推定問い合わせ率（サイト回遊後）")
+
+    pdf.set_xy(lm + 7, 49)
+    pdf.set_font(fn, "B", 22)
+    pdf.set_text_color(*rate_color)
+    pdf.cell(40, 12, rate)
+
+    pdf.set_xy(lm + 7 + 35, 53)
+    pdf.set_font(fn, "", 7.5)
+    pdf.set_text_color(100, 90, 70)
+    impression = site_report.get("overall_impression", "")
+    if len(impression) > 80:
+        impression = impression[:80] + "…"
+    pdf.multi_cell(inner - 42, 4.5, impression)
+
+    # ── DRMスコア ─────────────────────────────
+    mi = site_report.get("marketing_insights", {})
+    drm = mi.get("drm_score", "")
+    if drm:
+        drm_color = {"A": GREEN_MID, "B": BLUE_MID, "C": AMBER_T, "D": RED_T}.get(drm, GRAY)
+        drm_desc = {
+            "A": "集客・教育・販売がすべて機能。広告効果が出やすい状態。",
+            "B": "基本はできているが、1〜2点の改善で大きく伸びる余地あり。",
+            "C": "構造に問題あり。改善なく広告をかけると費用が無駄になる可能性大。",
+            "D": "根本的な作り直しが必要。現状のまま運用しても成果は出にくい。",
+        }.get(drm, "")
+
+        pdf.set_fill_color(26, 26, 62)
+        pdf.rect(lm, 72, inner, 18, style="F")
+
+        pdf.set_xy(lm + 4, 74)
+        pdf.set_font(fn, "B", 6.5)
+        pdf.set_text_color(*GOLD)
+        pdf.cell(60, 4, "マーケティング総合評価（DRM）")
+
+        pdf.set_xy(lm + 4, 79)
+        pdf.set_fill_color(*drm_color)
+        pdf.rect(lm + 4, 79, 10, 7, style="F")
+        pdf.set_font(fn, "B", 12)
+        pdf.set_text_color(*WHITE)
+        pdf.cell(10, 7, drm, align="C")
+
+        pdf.set_xy(lm + 17, 80)
+        pdf.set_font(fn, "", 7.5)
+        pdf.set_text_color(220, 210, 180)
+        pdf.cell(inner - 20, 5, drm_desc)
+
+    y_after_drm = 94
+
+    # ── 強み ─────────────────────────────────
+    strengths = site_report.get("strengths", [])[:3]
+    pdf.set_xy(lm, y_after_drm)
+    pdf.set_font(fn, "B", 9)
+    pdf.set_text_color(*GREEN_T)
+    pdf.cell(inner, 6, "[ 強み ] 効果的だった点")
+    y = pdf.get_y()
+
+    for s in strengths:
+        point = s.get("point", "").strip()
+        reason = s.get("reason", "").strip()
+        # カード
+        pdf.set_fill_color(*GREEN_BG)
+        card_y = pdf.get_y()
+        pdf.rect(lm, card_y, inner, 1, style="F")  # 左アクセント線代わりに薄い塗り
+        pdf.set_fill_color(240, 253, 244)
+        pdf.rect(lm, card_y, inner, 1, style="F")
+
+        pdf.set_xy(lm + 2, card_y)
+        pdf.set_fill_color(240, 253, 244)
+        pdf.set_font(fn, "B", 7.5)
+        pdf.set_text_color(*GREEN_T)
+        pdf.multi_cell(inner - 4, 4.5, f"◆ {point}", fill=True, padding=(1, 2, 0, 2))
+
+        pdf.set_fill_color(240, 253, 244)
+        pdf.set_font(fn, "", 7)
+        pdf.set_text_color(55, 65, 81)
+        pdf.set_x(lm + 2)
+        pdf.multi_cell(inner - 4, 4, reason, fill=True, padding=(0, 2, 2, 6))
+        pdf.ln(1.5)
+
+    # ── 弱み・改善点 ──────────────────────────
+    weaknesses = site_report.get("weaknesses", [])[:3]
+    pdf.set_font(fn, "B", 9)
+    pdf.set_text_color(*RED_T)
+    pdf.set_x(lm)
+    pdf.cell(inner, 6, "[ 改善点 ] 優先的に手を打つべき箇所")
+
+    for w in weaknesses:
+        point = w.get("point", "").strip()
+        suggestion = w.get("suggestion", "").strip()
+        card_y = pdf.get_y()
+
+        pdf.set_xy(lm + 2, card_y)
+        pdf.set_fill_color(254, 242, 242)
+        pdf.set_font(fn, "B", 7.5)
+        pdf.set_text_color(*RED_T)
+        pdf.multi_cell(inner - 4, 4.5, f"x  {point}", fill=True, padding=(1, 2, 0, 2))
+
+        if suggestion:
+            pdf.set_fill_color(254, 242, 242)
+            pdf.set_font(fn, "", 7)
+            pdf.set_text_color(100, 120, 100)
+            pdf.set_x(lm + 2)
+            pdf.multi_cell(inner - 4, 4, f"→ {suggestion}", fill=True, padding=(0, 2, 2, 6))
+        pdf.ln(1.5)
+
+    # ── 最重要改善 ────────────────────────────
+    priority = site_report.get("priority_action", "").strip()
+    if priority:
+        prio_y = pdf.get_y() + 2
+        pdf.set_fill_color(255, 251, 220)
+        pdf.rect(lm, prio_y, inner, 4, style="F")  # placeholder, will be overwritten
+
+        pdf.set_xy(lm + 2, prio_y)
+        pdf.set_fill_color(255, 251, 220)
+        pdf.set_font(fn, "B", 7.5)
+        pdf.set_text_color(*AMBER_T)
+        pdf.cell(inner - 4, 5, "【 今すぐやるべき最重要改善 】")
+
+        pdf.set_x(lm + 2)
+        pdf.set_fill_color(255, 251, 220)
+        pdf.set_font(fn, "B", 8)
+        pdf.set_text_color(30, 20, 5)
+        pdf.multi_cell(inner - 4, 5, priority, fill=True, padding=(0, 2, 3, 2))
+
+    # ── フッター ──────────────────────────────
+    footer_y = 272
+    pdf.set_fill_color(*NAVY_DARK)
+    pdf.rect(0, footer_y, W, 25, style="F")
+    pdf.set_fill_color(*GOLD)
+    pdf.rect(0, footer_y, W, 1.2, style="F")
+
+    pdf.set_xy(lm, footer_y + 3)
+    pdf.set_font(fn, "B", 8)
+    pdf.set_text_color(*GOLD)
+    pdf.cell(inner, 5, "このレポートはトドク VCT による無料サイト診断です")
+
+    pdf.set_xy(lm, footer_y + 9)
+    pdf.set_font(fn, "", 7)
+    pdf.set_text_color(200, 190, 160)
+    pdf.cell(inner, 4.5, "詳細な改善提案・競合分析・改善コピー作成は LIFE DESIGN LAB にご相談ください。")
+
+    pdf.set_xy(lm, footer_y + 15)
+    pdf.set_font(fn, "", 6.5)
+    pdf.set_text_color(150, 140, 110)
+    pdf.cell(inner, 4, "LIFE DESIGN LAB  ／  斉藤かおり（橘実柑）  ／  inquiry.lifedesignlab@gmail.com")
+
+    return bytes(pdf.output())

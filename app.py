@@ -10,7 +10,7 @@ from llm_client import get_persona_reaction, generate_report, generate_ab_report
 from web_scraper import scrape_site, extract_emails_from_pages
 from email_sender import send_report as send_email_report, is_configured as email_is_configured
 from db import save_result, load_history, load_detail, load_client_names, delete_record
-from pdf_generator import generate_pdf, generate_ab_pdf, generate_site_pdf
+from pdf_generator import generate_pdf, generate_ab_pdf, generate_site_pdf, generate_summary_pdf
 
 st.set_page_config(page_title="トドク VCT", page_icon="🏛", layout="wide")
 
@@ -1202,9 +1202,87 @@ with tab_site:
         except Exception as e:
             st.warning(f"PDF生成に失敗しました: {e}")
 
-        # ── メール送信 ──────────────────────────────────────────────
+        # ── 簡略版PDF（無料配布・メール添付用） ────────────────────
         st.divider()
-        st.markdown("#### 📧 レポートをメールで送信する")
+        st.markdown("#### 📨 簡略版サマリーをメールで送る（無料配布用）")
+        st.caption("診断結果の要点だけを1ページにまとめた簡易PDF。懇親会でその場で送れます。")
+
+        try:
+            _summary_url = pages[0]["url"].split("/")[0] + "//" + pages[0]["url"].split("/")[2] if pages else site_url
+            summary_pdf_bytes = generate_summary_pdf(
+                site_report=sr,
+                site_url=_summary_url,
+                profession=st.session_state.get("site_profession", ""),
+                device_label=device_label,
+            )
+            st.session_state["summary_pdf_bytes"] = summary_pdf_bytes
+            fname_summary = f"VCT_無料診断_{st.session_state.get('site_profession','')}_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+
+            col_dl1, col_dl2 = st.columns(2)
+            with col_dl1:
+                st.download_button(
+                    "📄 簡略版PDFをダウンロード",
+                    data=summary_pdf_bytes,
+                    file_name=fname_summary,
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+        except Exception as e:
+            st.warning(f"簡略版PDF生成に失敗しました: {e}")
+
+        # 簡略版メール送信フォーム
+        _found_emails = extract_emails_from_pages(pages)
+        _default_email = _found_emails[0] if _found_emails else ""
+        _prof_name = st.session_state.get("site_profession", "")
+
+        summary_to = st.text_input(
+            "送信先メールアドレス（簡略版）",
+            value=_default_email,
+            placeholder="info@example.com",
+            key="summary_to_email",
+        )
+        summary_subject = st.text_input(
+            "件名（簡略版）",
+            value=f"【無料診断】{_prof_name}様のホームページ診断サマリー",
+            key="summary_subject",
+        )
+        summary_body_default = (
+            f"はじめまして。LIFE DESIGN LAB の斉藤かおりと申します。\n\n"
+            f"{_prof_name}様のホームページを拝見し、"
+            f"集客改善のヒントになればと、無料の診断サマリーを作成いたしました。\n\n"
+            f"添付のPDF（1枚）をぜひご確認ください。\n\n"
+            f"詳細な改善提案や改善コピーの作成も承っております。\n"
+            f"お気軽にご返信ください。\n\n"
+            f"---\n斉藤かおり（橘実柑）\nLIFE DESIGN LAB / トドク\n"
+            f"inquiry.lifedesignlab@gmail.com"
+        )
+        summary_body = st.text_area("本文（簡略版）", value=summary_body_default, height=180, key="summary_body")
+
+        if not email_is_configured():
+            st.info("💡 `.env` に `SENDER_EMAIL` と `SENDER_APP_PASSWORD` を設定すると送信できます。")
+        else:
+            if st.button("📨 簡略版PDFを添付して送信", type="primary", use_container_width=True, key="btn_send_summary"):
+                if not summary_to or "@" not in summary_to:
+                    st.error("送信先メールアドレスを入力してください。")
+                elif "summary_pdf_bytes" not in st.session_state:
+                    st.error("先に簡略版PDFを生成してください。")
+                else:
+                    with st.spinner(f"{summary_to} に送信中..."):
+                        ok, err = send_email_report(
+                            to_email=summary_to,
+                            subject=summary_subject,
+                            body=summary_body,
+                            pdf_bytes=st.session_state["summary_pdf_bytes"],
+                            pdf_filename=f"VCT無料診断_{_prof_name}.pdf",
+                        )
+                    if ok:
+                        st.success(f"✅ {summary_to} に簡略版PDFを送信しました！")
+                    else:
+                        st.error(f"送信に失敗しました。\n{err}")
+
+        # ── 詳細版メール送信 ──────────────────────────────────────────────
+        st.divider()
+        st.markdown("#### 📧 詳細版レポートをメールで送信する")
 
         found_emails = extract_emails_from_pages(pages)
         default_email = found_emails[0] if found_emails else ""
