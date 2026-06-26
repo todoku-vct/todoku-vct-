@@ -1355,32 +1355,25 @@ class _SitePDF(_Base):
             self.cell(210, 8, "LIFE DESIGN LAB", align="C")
             logo_y += 20
 
-        # 区切りライン
+        # ── タイトルブロック（ロゴ下48mmとURLカード96mmの中間に明示配置） ──
+        _ty = 57  # タイトルテキストの上端 y
         self.set_fill_color(*GOLD)
-        self.rect(105 - 26, logo_y, 52, 0.2, style="F")
-        logo_y += 3
-
-        # メインタイトル（幅を絞って中央に締める）
+        self.rect(105 - 26, _ty - 5, 52, 0.2, style="F")   # 上区切り線
         _title_w = 150
-        self.set_xy((210 - _title_w) / 2, logo_y)
+        self.set_xy((210 - _title_w) / 2, _ty)
         self.set_font(self._font, "B", 20)
         self.set_text_color(*WHITE)
         self.cell(_title_w, 11, "サイト全体分析レポート", align="C")
-        self.ln(5)
-
-        # 区切りライン
         self.set_fill_color(*GOLD)
-        self.rect(105 - 26, self.get_y(), 52, 0.2, style="F")
-        self.ln(7)
-
-        # キャプション（ページ幅基準で真ん中）
+        self.rect(105 - 26, _ty + 14, 52, 0.2, style="F")  # 下区切り線
         self.set_x(0)
+        self.set_y(_ty + 20)
         self.set_font(self._font, "", 7)
         self.set_text_color(155, 143, 96)
         self.cell(210, 4, "仮想顧客テスト  ·  Powered by Claude AI", align="C")
 
-        # URLカード（左: URL情報 / 右: パワースコア）— キャラ上端(y≈149mm)より上に収まるよう間隔を詰める
-        self.ln(10)
+        # URLカード（固定位置 — ロゴ下/タイトル/キャラのバランスを固定）
+        self.set_y(96)
         bx, by = 14, self.get_y()
         bw, bh = 182, 34
         url_w, score_w = 115, 67
@@ -1708,9 +1701,9 @@ def generate_site_pdf(
     if nav_issues:
         pdf.section_bar("導線・ナビゲーションの問題")
         for ni in nav_issues:
-            issue_text = ni.get("issue", "")
-            suggestion_text = ni.get("suggestion", "")
-            page_name = ni.get("page", "")
+            issue_text = ni.get("issue", "").strip()        # 末尾\nを除去（空行による空白防止）
+            suggestion_text = ni.get("suggestion", "").strip()
+            page_name = ni.get("page", "").strip()
             # カード高さを超保守的に推定（20文字/行）→ 事前に改ページしてカード内では絶対に改ページしない
             _i_lines = max(1, -(-len(issue_text) // 20))
             _s_lines = max(1, -(-len(suggestion_text) // 22))
