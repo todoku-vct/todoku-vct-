@@ -1,4 +1,4 @@
-from fpdf import FPDF
+﻿from fpdf import FPDF
 from datetime import datetime
 import math
 import os
@@ -687,24 +687,29 @@ class _Base(FPDF):
             return
         lm = self.l_margin
         self.ln(4)
-        self.section_bar("GEO スコア（AI検索最適化 / Generative Engine Optimization）")
 
         score = int(geo.get("score", 5)) if str(geo.get("score", "5")).isdigit() else 5
 
-        # ── 総合スコアバー ──
+        # ── セクション見出し＋スコアバーを統合（1本のダークバー） ──
         y = self.get_y()
         self.set_fill_color(42, 36, 22)
-        self.rect(lm, y, 180, 14, style="F")
+        self.rect(lm, y, 180, 18, style="F")
         self.set_fill_color(*GOLD)
-        self.rect(lm, y, 3, 14, style="F")
+        self.rect(lm, y, 3, 18, style="F")
+        # セクション小見出し
+        self.set_font(self._font, "", 7)
+        self.set_text_color(160, 140, 80)
+        self.set_xy(lm + 8, y + 2)
+        self.cell(172, 4, "GEO スコア  /  AI検索最適化（Generative Engine Optimization）")
+        # スコア行
         self.set_font(self._font, "B", 10)
         self.set_text_color(*GOLD)
-        self.set_xy(lm + 8, y + 3.5)
-        self.cell(60, 6, f"GEO 総合スコア：{score} / 10")
+        self.set_xy(lm + 8, y + 8)
+        self.cell(65, 6, f"総合スコア：{score} / 10")
         self.set_font(self._font, "", 7.5)
         self.set_text_color(220, 200, 150)
-        self.cell(110, 6, "AIに推薦・引用されやすさ（Kantar GEO対策基準）")
-        self.set_y(y + 17)
+        self.cell(107, 6, "AIに推薦・引用されやすさ（Kantar GEO対策基準）")
+        self.set_y(y + 21)
 
         # ── 五角形レーダーチャート（左）＋ステップ詳細（右） ──
         step_scores = geo.get("step_scores", {})
@@ -1342,7 +1347,7 @@ class _SitePDF(_Base):
         if os.path.exists(_LOGO_PATH):
             logo_size = 36
             self.image(_to_rgb_path(_LOGO_PATH, bg=(8,8,8)), x=105 - logo_size / 2, y=logo_y, w=logo_size)
-            logo_y += logo_size + 4
+            logo_y += logo_size + 1
         else:
             self.set_y(logo_y + 4)
             self.set_font(self._font, "B", 12)
@@ -1353,7 +1358,7 @@ class _SitePDF(_Base):
         # 区切りライン
         self.set_fill_color(*GOLD)
         self.rect(105 - 26, logo_y, 52, 0.2, style="F")
-        logo_y += 6
+        logo_y += 3
 
         # メインタイトル（幅を絞って中央に締める）
         _title_w = 150
@@ -1720,8 +1725,6 @@ def generate_site_pdf(
                 pdf.add_page()
                 _meta_bar(pdf)
             y_ni = pdf.get_y()
-            # カード内は改ページ禁止（テキスト飛び防止）
-            pdf.set_auto_page_break(auto=False)
             # ページ名バッジ（全幅）
             pdf.set_fill_color(42, 36, 22)
             pdf.rect(lm, y_ni, 180, 7, style="F")
@@ -1744,7 +1747,6 @@ def generate_site_pdf(
             pdf.set_text_color(22, 18, 10)
             pdf.multi_cell(180, 5.5, f"→ 改善提案: {suggestion_text}", fill=True, padding=(2, 4, 2, 8))
             pdf.set_y(pdf.get_y() + 5)
-            pdf.set_auto_page_break(auto=True, margin=22)
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
 
