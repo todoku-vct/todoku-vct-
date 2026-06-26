@@ -1366,22 +1366,15 @@ class _SitePDF(_Base):
         self.set_font(self._font, "B", 20)
         self.set_text_color(*WHITE)
         self.cell(_title_w, 11, "サイト全体分析レポート", align="C")
-        self.ln(8)
-
-        # 英語サブタイトル
-        _sub_w = 130
-        self.set_xy((210 - _sub_w) / 2, self.get_y())
-        self.set_font(self._font, "", 9)
-        self.set_text_color(*GOLD)
-        self.cell(_sub_w, 5, "Website  Analysis  Report", align="C")
-        self.ln(6)
+        self.ln(5)
 
         # 区切りライン
         self.set_fill_color(*GOLD)
         self.rect(105 - 26, self.get_y(), 52, 0.2, style="F")
         self.ln(7)
 
-        # キャプション
+        # キャプション（ページ幅基準で真ん中）
+        self.set_x(0)
         self.set_font(self._font, "", 7)
         self.set_text_color(155, 143, 96)
         self.cell(210, 4, "仮想顧客テスト  ·  Powered by Claude AI", align="C")
@@ -1441,8 +1434,9 @@ class _SitePDF(_Base):
         self.set_text_color(*ps_col)
         self.cell(score_w - 2, 5, ps_str, align="C")
 
-        # 作成日
+        # 作成日（ページ幅基準で真ん中）
         self.set_y(by + bh + 9)
+        self.set_x(0)
         self.set_font(self._font, "", 7)
         self.set_text_color(115, 105, 70)
         self.cell(210, 5, f"作成日:  {datetime.now().strftime('%Y年%m月%d日')}", align="C")
@@ -1717,14 +1711,15 @@ def generate_site_pdf(
             issue_text = ni.get("issue", "")
             suggestion_text = ni.get("suggestion", "")
             page_name = ni.get("page", "")
-            # カード高さを保守的に推定（実際の折り返しに合わせて1行あたり文字数を少なめに）
-            _i_lines = max(1, -(-len(issue_text) // 26))
-            _s_lines = max(1, -(-len(suggestion_text) // 28))
+            # カード高さを超保守的に推定（20文字/行）→ 事前に改ページしてカード内では絶対に改ページしない
+            _i_lines = max(1, -(-len(issue_text) // 20))
+            _s_lines = max(1, -(-len(suggestion_text) // 22))
             _card_h = 7 + _i_lines * 5.5 + 10 + _s_lines * 5.5 + 10
             if (297 - pdf.get_y() - 22) < _card_h + 6:
                 pdf.add_page()
                 _meta_bar(pdf)
             y_ni = pdf.get_y()
+            pdf.set_auto_page_break(auto=False)
             # ページ名バッジ（全幅）
             pdf.set_fill_color(42, 36, 22)
             pdf.rect(lm, y_ni, 180, 7, style="F")
@@ -1746,6 +1741,7 @@ def generate_site_pdf(
             pdf.set_font(pdf._font, "", 8)
             pdf.set_text_color(22, 18, 10)
             pdf.multi_cell(180, 5.5, f"→ 改善提案: {suggestion_text}", fill=True, padding=(2, 4, 2, 8))
+            pdf.set_auto_page_break(auto=True, margin=22)
             pdf.set_y(pdf.get_y() + 5)
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
@@ -1756,10 +1752,10 @@ def generate_site_pdf(
             pdf.add_page()
             _meta_bar(pdf)
         pdf.section_bar("あると効果的なページ（現在なし）")
-        for m in missing[:6]:
+        for m in missing[:8]:
             _m_lines = max(1, -(-len(m) // 46))
-            _m_h = max(13, _m_lines * 5.5 + 8)
-            if (297 - pdf.get_y() - 22) < _m_h + 5:
+            _m_h = max(9, _m_lines * 5.5 + 4)
+            if (297 - pdf.get_y() - 22) < _m_h + 3:
                 pdf.add_page()
                 _meta_bar(pdf)
             y_m = pdf.get_y()
@@ -1767,11 +1763,11 @@ def generate_site_pdf(
             pdf.rect(lm, y_m, 180, _m_h, style="F")
             pdf.set_fill_color(*GOLD)
             pdf.rect(lm, y_m, 3, _m_h, style="F")
-            pdf.set_xy(lm + 8, y_m + 4)
+            pdf.set_xy(lm + 8, y_m + 2)
             pdf.set_font(pdf._font, "B", 9)
             pdf.set_text_color(22, 18, 10)
             pdf.multi_cell(168, 5.5, f"◆  {m}")
-            pdf.set_y(y_m + _m_h + 3)
+            pdf.set_y(y_m + _m_h + 1)
         pdf.set_text_color(0, 0, 0)
 
     pdf._fill_page_bottom()
