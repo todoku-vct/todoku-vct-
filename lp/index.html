@@ -342,6 +342,98 @@
       padding-left: 36px;
     }
 
+    /* ── PRICING ── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    .pricing-card {
+      background: white;
+      border-radius: 20px;
+      padding: 32px 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.09);
+      border-top: 4px solid var(--purple);
+      text-align: center;
+      position: relative;
+    }
+    .pricing-card.featured {
+      border-top-color: var(--gold);
+      box-shadow: 0 8px 32px rgba(212,168,67,0.2);
+    }
+    .pricing-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--gold); color: var(--navy);
+      font-size: 0.72rem; font-weight: 900;
+      padding: 4px 16px; border-radius: 20px;
+      white-space: nowrap;
+    }
+    .pricing-plan { font-size: 0.78rem; font-weight: 800; color: var(--purple); letter-spacing: 0.08em; margin-bottom: 12px; }
+    .pricing-card.featured .pricing-plan { color: var(--gold); }
+    .pricing-name { font-size: 1.2rem; font-weight: 900; color: var(--navy); margin-bottom: 8px; }
+    .pricing-desc { font-size: 0.8rem; color: var(--gray); line-height: 1.6; margin-bottom: 20px; }
+    .pricing-price {
+      font-size: 2rem; font-weight: 900; color: var(--navy); line-height: 1;
+      margin-bottom: 4px;
+    }
+    .pricing-price span { font-size: 0.9rem; font-weight: 700; }
+    .pricing-sub { font-size: 0.75rem; color: var(--gray); margin-bottom: 20px; }
+    .pricing-paper { font-size: 0.82rem; color: var(--purple); font-weight: 700; margin-bottom: 20px; }
+    .pricing-features { list-style: none; text-align: left; margin-bottom: 0; }
+    .pricing-features li {
+      font-size: 0.82rem; color: var(--navy);
+      padding: 7px 0; border-bottom: 1px solid var(--gray-light);
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .pricing-features li::before { content: '✓'; color: var(--purple); font-weight: 900; flex-shrink: 0; }
+    .pricing-card.featured .pricing-features li::before { color: var(--gold); }
+    .pricing-note {
+      background: var(--off-white);
+      border-radius: 12px; padding: 20px 24px;
+      font-size: 0.85rem; color: var(--gray); line-height: 1.9;
+      text-align: center;
+    }
+    .vct-price-box {
+      background: linear-gradient(135deg, var(--navy), var(--navy-mid));
+      border-radius: 20px; padding: 40px;
+      color: white; text-align: center; margin-bottom: 48px;
+    }
+    .vct-price-box h3 { font-size: 1.3rem; font-weight: 900; margin-bottom: 8px; }
+    .vct-price-box .vct-price-sub { color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 28px; }
+    .vct-price-row {
+      display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .vct-price-item { text-align: center; }
+    .vct-price-label { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+    .vct-price-num { font-size: 1.8rem; font-weight: 900; color: var(--gold); }
+    .vct-price-num.strike { text-decoration: line-through; color: rgba(255,255,255,0.3); font-size: 1.2rem; }
+    .vct-price-num span { font-size: 0.85rem; }
+    .vct-monitor-note { font-size: 0.78rem; color: rgba(255,255,255,0.5); }
+
+    /* ── PARTNER ── */
+    .partner-box {
+      background: linear-gradient(135deg, #f5f0ff, #ede5ff);
+      border: 2px solid var(--purple);
+      border-radius: 20px; padding: 48px 40px;
+      text-align: center;
+    }
+    .partner-box h3 { font-size: 1.4rem; font-weight: 900; color: var(--purple); margin-bottom: 12px; }
+    .partner-box .partner-sub { color: var(--gray); font-size: 0.9rem; margin-bottom: 32px; line-height: 1.8; }
+    .partner-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .partner-table th {
+      background: var(--purple); color: white;
+      padding: 12px 16px; font-size: 0.82rem; font-weight: 800;
+    }
+    .partner-table td {
+      padding: 14px 16px; font-size: 0.88rem;
+      border-bottom: 1px solid rgba(107,70,193,0.15);
+      text-align: center;
+    }
+    .partner-table td:first-child { text-align: left; font-weight: 700; color: var(--navy); }
+    .partner-table .highlight { color: var(--purple); font-weight: 900; font-size: 1rem; }
+    .partner-note { font-size: 0.78rem; color: var(--gray); margin-bottom: 28px; }
+
     /* ── FINAL CTA ── */
     #final-cta {
       background: linear-gradient(135deg, #0d0d28, #1a1a3e);
@@ -685,6 +777,141 @@
         <div class="faq-q">士業以外でも対応していますか？</div>
         <div class="faq-a">現在は士業事務所を中心にお受けしています。他業種の方はご相談ください。</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="section section-alt">
+  <div class="container">
+    <div class="tag">料金プラン</div>
+    <h2 class="section-title">トドクの<span>サービス料金</span></h2>
+
+    <!-- VCT診断レポート -->
+    <div class="vct-price-box fade-in">
+      <h3>📊 VCT サイト診断レポート</h3>
+      <p class="vct-price-sub">AIが10人の仮想顧客として、あなたのサイトを本音で診断。10ページの詳細PDFレポートをお届けします。</p>
+      <div class="vct-price-row">
+        <div class="vct-price-item">
+          <div class="vct-price-label">定価</div>
+          <div class="vct-price-num strike">¥80,000</div>
+        </div>
+        <div class="vct-price-item">
+          <div class="vct-price-label">モニター価格（先着10名）</div>
+          <div class="vct-price-num">¥20,000<span>（税込）</span></div>
+        </div>
+      </div>
+      <p class="vct-monitor-note">※ 先着3名様は無料モニターとして募集中。ご利用後のアンケートにご協力いただける方限定。</p>
+    </div>
+
+    <!-- Kindle制作 -->
+    <div class="tag">Kindle本制作</div>
+    <h3 class="section-title" style="font-size:1.4rem;margin-bottom:32px;">あなたの知識を<span>本にして届ける</span></h3>
+    <div class="pricing-grid fade-in">
+
+      <div class="pricing-card">
+        <div class="pricing-plan">LIGHT PLAN</div>
+        <div class="pricing-name">ライト</div>
+        <div class="pricing-desc">原稿のみ（マンガなし）<br>約100ページ構成</div>
+        <div class="pricing-price">¥<span></span>298,000<span>〜</span></div>
+        <div class="pricing-sub">電子書籍（Kindle）のみ</div>
+        <div class="pricing-paper">ペーパーバック込み ¥398,000〜</div>
+        <ul class="pricing-features">
+          <li>丁寧なヒアリング（複数回）</li>
+          <li>原稿執筆・構成・編集</li>
+          <li>表紙デザイン</li>
+          <li>VCT診断レポート付き</li>
+          <li>HP・LP改善提案付き</li>
+          <li>KDP登録サポート</li>
+        </ul>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-badge">人気No.1</div>
+        <div class="pricing-plan">STANDARD PLAN</div>
+        <div class="pricing-name">スタンダード</div>
+        <div class="pricing-desc">原稿65%＋マンガ35%<br>約100ページ構成</div>
+        <div class="pricing-price">¥<span></span>498,000<span>〜</span></div>
+        <div class="pricing-sub">電子書籍（Kindle）のみ</div>
+        <div class="pricing-paper">ペーパーバック込み ¥598,000〜</div>
+        <ul class="pricing-features">
+          <li>丁寧なヒアリング（複数回）</li>
+          <li>原稿執筆・構成・編集</li>
+          <li>AIマンガ制作（各章）</li>
+          <li>表紙デザイン</li>
+          <li>VCT診断レポート付き</li>
+          <li>HP・LP改善提案付き</li>
+          <li>KDP登録サポート</li>
+        </ul>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-plan">FULL MANGA PLAN</div>
+        <div class="pricing-name">フルマンガ</div>
+        <div class="pricing-desc">マンガ100%<br>約100ページ構成</div>
+        <div class="pricing-price">¥<span></span>598,000<span>〜</span></div>
+        <div class="pricing-sub">電子書籍（Kindle）のみ</div>
+        <div class="pricing-paper">ペーパーバック込み ¥698,000〜</div>
+        <ul class="pricing-features">
+          <li>丁寧なヒアリング（複数回）</li>
+          <li>AIマンガ全ページ制作</li>
+          <li>ストーリー・シナリオ制作</li>
+          <li>表紙デザイン</li>
+          <li>VCT診断レポート付き</li>
+          <li>HP・LP改善提案付き</li>
+          <li>KDP登録サポート</li>
+        </ul>
+      </div>
+
+    </div>
+    <div class="pricing-note fade-in">
+      同業他社（AI制作）の相場：50〜100万円・納期1ヶ月 ／ トドクは<strong>丁寧なヒアリングと集客改善提案込み</strong>でご提供します。<br>
+      まずは無料相談でご状況をお聞きした上でご提案します。
+    </div>
+  </div>
+</section>
+
+<!-- PARTNER PROGRAM -->
+<section id="partner" class="section">
+  <div class="container">
+    <div class="tag">パートナープログラム</div>
+    <h2 class="section-title">紹介するだけで<span>販売価格の20%</span>を還元</h2>
+    <div class="partner-box fade-in">
+      <h3>士業のお知り合いをお持ちの方へ</h3>
+      <p class="partner-sub">
+        トドクでは紹介パートナーを随時募集しています。<br>
+        ご紹介いただくだけで、成約時に販売価格の20%をお支払いします。<br>
+        契約不要・登録無料。
+      </p>
+      <table class="partner-table">
+        <tr>
+          <th>サービス</th>
+          <th>販売価格</th>
+          <th>紹介料（20%）</th>
+        </tr>
+        <tr>
+          <td>VCT診断レポート</td>
+          <td>80,000円</td>
+          <td class="highlight">16,000円</td>
+        </tr>
+        <tr>
+          <td>Kindle制作 ライト</td>
+          <td>298,000円〜</td>
+          <td class="highlight">59,600円〜</td>
+        </tr>
+        <tr>
+          <td>Kindle制作 スタンダード</td>
+          <td>498,000円〜</td>
+          <td class="highlight">99,600円〜</td>
+        </tr>
+        <tr>
+          <td>Kindle制作 フルマンガ</td>
+          <td>598,000円〜</td>
+          <td class="highlight">119,600円〜</td>
+        </tr>
+      </table>
+      <p class="partner-note">※ 成約確認後、1週間以内にお振込みします。</p>
+      <a href="mailto:maisonluxeforbae@gmail.com?subject=トドク パートナー登録希望" class="cta-btn">パートナー登録する（無料）→</a>
     </div>
   </div>
 </section>
