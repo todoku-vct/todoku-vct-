@@ -1911,14 +1911,20 @@ def _build_summary_html(
     profession: str,
     device_label: str,
 ) -> str:
-    now = datetime.now().strftime("%Y年%m月%d日")
-    _device_clean = device_label.replace("💻", "").replace("📱", "").strip()
+    now = datetime.now().strftime("%Y\u5e74%m\u6708%d\u65e5")
+    _device_clean = device_label.replace("\U0001f4bb", "").replace("\U0001f4f1", "").strip()
 
-    logo_html = ""
-    if os.path.exists(_LOGO_PATH):
-        with open(_LOGO_PATH, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
-        logo_html = f'<img class="footer-logo" src="data:image/png;base64,{b64}">'
+    def _b64img(path: str) -> str:
+        if not os.path.exists(path):
+            return ""
+        with open(path, "rb") as fh:
+            import base64 as _b64
+            return _b64.b64encode(fh.read()).decode()
+
+    logo_b64 = _b64img(_LOGO_PATH)
+    char_b64 = _b64img(_CHARACTER_PATH)
+    logo_html = f'<img class="logo-img" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ""
+    char_html = f'<img class="char-img" src="data:image/png;base64,{char_b64}">' if char_b64 else ""
 
     power_total, _, _, _ = _calc_power_score(site_report)
     power_pct = min(power_total, 100)
@@ -1929,114 +1935,142 @@ def _build_summary_html(
     except Exception:
         rate_num = 0
     if rate_num >= 30:
-        rate_color, rate_badge = "#16A34A", "高水準"
+        rate_color, rate_badge = "#16A34A", "\u9ad8\u6c34\u6e96"
     elif rate_num >= 12:
-        rate_color, rate_badge = "#D97706", "標準"
+        rate_color, rate_badge = "#D97706", "\u6a19\u6e96"
     else:
-        rate_color, rate_badge = "#B91C1C", "要改善"
+        rate_color, rate_badge = "#B91C1C", "\u8981\u6539\u5584"
 
     mi = site_report.get("marketing_insights", {})
     drm = mi.get("drm_score", "-")
     drm_color = {"A": "#16A34A", "B": "#2563EB", "C": "#D97706", "D": "#B91C1C"}.get(drm, "#6B7280")
-    drm_desc = {"A": "集客・教育・販売が全機能", "B": "1〜2改善で大きく伸びる",
-                "C": "改善前に広告は危険", "D": "根本的な再構築が必要"}.get(drm, "")
+    drm_descs = {
+        "A": "\u96c6\u5ba2\u30fb\u6559\u80b2\u30fb\u8ca9\u58f2\u304c\u5168\u6a5f\u80fd",
+        "B": "1\uff5e2\u6539\u5584\u3067\u5927\u304d\u304f\u4f38\u3073\u308b",
+        "C": "\u6539\u5584\u524d\u306b\u5e83\u544a\u306f\u5371\u967a",
+        "D": "\u6839\u672c\u7684\u306a\u518d\u69cb\u7bc9\u304c\u5fc5\u8981",
+    }
+    drm_desc = drm_descs.get(drm, "")
 
     def _esc(s: str) -> str:
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     strengths_html = ""
     for s in site_report.get("strengths", [])[:2]:
-        strengths_html += f"""
-        <div class="sw-item" style="border-left-color:#166534;">
-          <div class="sw-item-title" style="color:#166534;">{_esc(s.get('point',''))}</div>
-          <div class="sw-item-body" style="color:#1a3a20;">{_esc(s.get('reason',''))}</div>
-        </div>"""
+        strengths_html += (
+            '<div class="sw-item s-item">' +
+            f'<div class="sw-title s-title">{_esc(s.get("point",""))}</div>' +
+            f'<div class="sw-body">{_esc(s.get("reason",""))}</div>' +
+            '</div>'
+        )
 
     weaknesses_html = ""
     for w in site_report.get("weaknesses", [])[:2]:
-        weaknesses_html += f"""
-        <div class="sw-item" style="border-left-color:#991b1b;">
-          <div class="sw-item-title" style="color:#991b1b;">{_esc(w.get('point',''))}</div>
-          <div class="sw-item-body" style="color:#5a1a1a;">{_esc(w.get('suggestion',''))}</div>
-        </div>"""
+        weaknesses_html += (
+            '<div class="sw-item w-item">' +
+            f'<div class="sw-title w-title">{_esc(w.get("point",""))}</div>' +
+            f'<div class="sw-body">{_esc(w.get("suggestion",""))}</div>' +
+            '</div>'
+        )
 
     impression = site_report.get("overall_impression", "")
-    impression = (impression[:220] + "…") if len(impression) > 220 else impression
-    priority = site_report.get("priority_action", "").strip()
-    priority = (priority[:220] + "…") if len(priority) > 220 else priority
+    impression = (impression[:230] + "\u2026") if len(impression) > 230 else impression
+    priority   = site_report.get("priority_action", "").strip()
+    priority   = (priority[:230]   + "\u2026") if len(priority) > 230 else priority
 
-    title = f"{profession}  無料サイト診断レポート" if profession else "無料サイト診断レポート"
-    url_disp = (site_url[:85] + "…") if len(site_url) > 85 else site_url
+    title    = f"{profession}\u3000\u7121\u6599\u30b5\u30a4\u30c8\u8a3a\u65ad\u30ec\u30dd\u30fc\u30c8" if profession else "\u7121\u6599\u30b5\u30a4\u30c8\u8a3a\u65ad\u30ec\u30dd\u30fc\u30c8"
+    url_disp = (site_url[:80] + "\u2026") if len(site_url) > 80 else site_url
+
+    css = """
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Yu Gothic','Meiryo','Noto Sans CJK JP',sans-serif;
+  background: #080808; color: #fff;
+  width: 210mm; height: 297mm;
+  display: flex; flex-direction: column;
+  overflow: hidden; font-size: 8pt; line-height: 1.4;
+}
+.topline { height: 4px; background: #D4AF37; flex-shrink: 0; }
+.header { background: #080808; padding: 16px 22px 12px; flex-shrink: 0; }
+.header-sub { font-size: 5.5pt; color: #D4AF37; letter-spacing: .1em; margin-bottom: 6px; }
+.header-title { font-size: 17pt; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.header-meta { font-size: 6pt; color: #7a6a3a; margin-bottom: 3px; }
+.header-disc { font-size: 4.5pt; color: #4a4020; }
+.hd { height: 1px; background: #1e1a08; margin: 10px 22px 0; }
+.scores {
+  display: flex; gap: 5px; padding: 10px 22px;
+  background: #080808; flex-shrink: 0;
+}
+.sc {
+  flex: 1; background: #0f0e08;
+  border-top: 3px solid; padding: 12px 10px 10px;
+  text-align: center; display: flex; flex-direction: column; align-items: center;
+}
+.sc-lbl { font-size: 5.5pt; font-weight: 700; margin-bottom: 6px; letter-spacing: .04em; }
+.sc-num { font-size: 38pt; font-weight: 700; line-height: 1; margin-bottom: 3px; }
+.sc-unit { font-size: 6pt; color: #8a7040; margin-bottom: 7px; }
+.bar-bg { width: calc(100% - 20px); height: 4px; background: #2a2010; border-radius: 2px; margin-bottom: 8px; }
+.bar-fill { height: 4px; background: #D4AF37; border-radius: 2px; }
+.badge {
+  display: inline-block; padding: 3px 16px; border-radius: 3px;
+  font-size: 7.5pt; font-weight: 700; color: #fff; margin-bottom: 7px;
+}
+.sc-guide { font-size: 4.5pt; color: #5a4a28; line-height: 1.8; }
+.sc-desc { font-size: 6.5pt; color: #fff; font-weight: 700; margin-bottom: 5px; }
+.sc-sub { font-size: 4.5pt; color: #6a5a30; line-height: 1.8; }
+.content {
+  flex: 1; background: #f5f3ec; padding: 12px 22px 10px;
+  color: #1a1510; display: flex; flex-direction: column; gap: 8px; min-height: 0;
+}
+.impression { background: #fff; border-left: 4px solid #D4AF37; padding: 8px 12px; flex-shrink: 0; }
+.sec-lbl { font-size: 5.5pt; font-weight: 700; color: #8a6a10; margin-bottom: 3px; }
+.imp-text { font-size: 7pt; color: #1a1510; line-height: 1.65; }
+.sw-row { display: flex; gap: 5px; flex: 1; min-height: 0; }
+.sw-col { flex: 1; display: flex; flex-direction: column; }
+.sw-head { padding: 6px 10px; font-size: 7pt; font-weight: 700; color: #fff; flex-shrink: 0; }
+.sw-items { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.sw-item { background: #fff; border-left: 3px solid; padding: 7px 10px; flex: 1; }
+.s-item { border-left-color: #166534; }
+.w-item { border-left-color: #991b1b; }
+.sw-title { font-size: 7pt; font-weight: 700; margin-bottom: 3px; }
+.s-title { color: #166534; }
+.w-title { color: #991b1b; }
+.sw-body { font-size: 5.5pt; line-height: 1.6; color: #2a2a2a; }
+.priority { background: #fff9e0; border-left: 4px solid #92400e; padding: 8px 12px; flex-shrink: 0; }
+.pr-lbl { font-size: 5.5pt; font-weight: 700; color: #92400e; margin-bottom: 3px; }
+.pr-text { font-size: 8pt; font-weight: 700; color: #2a1a02; line-height: 1.55; }
+.guide { background: #e5e1d0; padding: 7px 12px; flex-shrink: 0; }
+.guide-title { font-size: 7pt; font-weight: 700; color: #5a4a10; margin-bottom: 5px; }
+.gr { display: flex; gap: 6px; margin-bottom: 3px; }
+.gr-key { font-size: 5pt; font-weight: 700; color: #5a4a10; min-width: 88px; }
+.gr-val { font-size: 5pt; color: #3a2a08; line-height: 1.6; flex: 1; }
+.footer {
+  background: #080808; border-top: 3px solid #D4AF37;
+  flex-shrink: 0; position: relative;
+  display: flex; align-items: flex-end;
+  overflow: hidden; height: 62mm;
+}
+.char-img {
+  position: absolute; bottom: 0; left: 18mm;
+  height: 66mm; width: auto; object-fit: contain; opacity: 0.92;
+}
+.footer-body {
+  margin-left: 60mm; padding: 14px 22px 14px 0;
+  display: flex; flex-direction: column; justify-content: center;
+  flex: 1; align-self: center;
+}
+.logo-img { width: 22px; height: 22px; object-fit: contain; margin-bottom: 5px; }
+.ft-name { font-size: 9pt; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.ft-email { font-size: 6pt; color: #D4AF37; margin-bottom: 8px; }
+.ft-div { height: 1px; background: #2a2010; margin-bottom: 8px; }
+.ft-up-title { font-size: 7pt; font-weight: 700; color: #D4AF37; margin-bottom: 3px; }
+.ft-up-text { font-size: 5.5pt; color: #8a7a4a; line-height: 1.65; }
+"""
 
     return f"""<!DOCTYPE html>
-<html lang="ja">
-<head><meta charset="UTF-8">
-<style>
-@page {{ size: A4; margin: 0; }}
-* {{ box-sizing: border-box; margin: 0; padding: 0; }}
-body {{
-  font-family: 'Yu Gothic','Meiryo','Noto Sans CJK JP','Noto Sans JP',sans-serif;
-  background: #080808; color: #fff;
-  width: 210mm; height: 297mm; overflow: hidden;
-  font-size: 8pt; line-height: 1.4;
-}}
-.topline {{ height: 4px; background: #D4AF37; }}
-.header {{ background: #080808; padding: 13px 20px 8px; }}
-.header-sub {{ font-size: 5.5pt; color: #D4AF37; letter-spacing: .08em; margin-bottom: 4px; }}
-.header-title {{ font-size: 16pt; font-weight: 700; color: #fff; margin-bottom: 5px; }}
-.header-meta {{ font-size: 5.5pt; color: #7a6a3a; margin-bottom: 2px; }}
-.header-disclaimer {{ font-size: 4.5pt; color: #4a4020; }}
-.header-divider {{ height: 1px; background: #1a1508; margin: 7px 20px 0; }}
-.scores {{ display: flex; gap: 4px; padding: 8px 20px 6px; background: #080808; }}
-.score-card {{
-  flex: 1; background: #111008; border-top: 3px solid;
-  padding: 9px 8px; text-align: center;
-}}
-.score-label {{ font-size: 5.5pt; font-weight: 700; margin-bottom: 5px; letter-spacing: .03em; }}
-.score-big {{ font-size: 36pt; font-weight: 700; line-height: 1; margin-bottom: 3px; }}
-.score-unit {{ font-size: 6pt; color: #8a7040; margin-bottom: 5px; }}
-.bar-bg {{ height: 4px; background: #2a2010; border-radius: 2px; margin: 0 10px 6px; }}
-.bar-fill {{ height: 4px; background: #D4AF37; border-radius: 2px; }}
-.badge {{
-  display: inline-block; padding: 2px 14px; border-radius: 3px;
-  font-size: 7pt; font-weight: 700; color: #fff; margin-bottom: 5px;
-}}
-.score-guide {{ font-size: 4.5pt; color: #6a5a30; line-height: 1.7; }}
-.score-desc {{ font-size: 6pt; color: #fff; font-weight: 700; margin-bottom: 4px; }}
-.score-sub {{ font-size: 4.5pt; color: #7a6a3a; line-height: 1.7; }}
-.content {{ background: #f5f3ec; padding: 8px 20px 6px; color: #1a1510; }}
-.impression {{ background: #fff; border-left: 3px solid #D4AF37; padding: 6px 10px; margin-bottom: 7px; }}
-.sec-label {{ font-size: 5.5pt; font-weight: 700; color: #8a6a10; margin-bottom: 2px; }}
-.imp-text {{ font-size: 6.5pt; color: #1a1510; line-height: 1.65; }}
-.sw-row {{ display: flex; gap: 4px; margin-bottom: 7px; }}
-.sw-col {{ flex: 1; }}
-.sw-head {{ padding: 5px 8px; font-size: 6.5pt; font-weight: 700; color: #fff; margin-bottom: 3px; }}
-.sw-item {{
-  background: #fff; border-left: 3px solid;
-  padding: 5px 8px; margin-bottom: 3px; min-height: 34px;
-}}
-.sw-item-title {{ font-size: 6.5pt; font-weight: 700; margin-bottom: 2px; }}
-.sw-item-body {{ font-size: 5.5pt; line-height: 1.55; }}
-.priority {{ background: #fff9e0; border-left: 3px solid #92400e; padding: 6px 10px; margin-bottom: 7px; }}
-.priority-label {{ font-size: 5.5pt; font-weight: 700; color: #92400e; margin-bottom: 2px; }}
-.priority-text {{ font-size: 7.5pt; font-weight: 700; color: #2a1a02; line-height: 1.55; }}
-.guide {{ background: #e5e1d0; padding: 6px 10px; }}
-.guide-title {{ font-size: 7pt; font-weight: 700; color: #5a4a10; margin-bottom: 4px; }}
-.guide-row {{ display: flex; gap: 6px; margin-bottom: 2px; }}
-.guide-key {{ font-size: 5pt; font-weight: 700; color: #5a4a10; min-width: 85px; }}
-.guide-val {{ font-size: 5pt; color: #3a2a08; line-height: 1.55; flex: 1; }}
-.footer {{
-  background: #080808; border-top: 3px solid #D4AF37;
-  padding: 8px 20px; display: flex; align-items: flex-start; gap: 12px;
-}}
-.footer-logo {{ width: 26px; height: 26px; object-fit: contain; margin-top: 2px; }}
-.footer-info {{ flex: 1; }}
-.footer-name {{ font-size: 8pt; font-weight: 700; color: #fff; margin-bottom: 2px; }}
-.footer-email {{ font-size: 6pt; color: #D4AF37; margin-bottom: 5px; }}
-.footer-divider {{ height: 1px; background: #2a2010; margin-bottom: 5px; }}
-.upsell-title {{ font-size: 6.5pt; font-weight: 700; color: #D4AF37; margin-bottom: 2px; }}
-.upsell-text {{ font-size: 5.5pt; color: #8a7a4a; line-height: 1.6; }}
-</style>
+<html lang="ja"><head><meta charset="UTF-8">
+<style>{css}</style>
 </head>
 <body>
 <div class="topline"></div>
@@ -2044,80 +2078,71 @@ body {{
   <div class="header-sub">LIFE DESIGN LAB  —  トドク VCT  無料サイト診断レポート</div>
   <div class="header-title">{_esc(title)}</div>
   <div class="header-meta">{_esc(url_disp)}  |  {_esc(_device_clean)}  |  {now}</div>
-  <div class="header-disclaimer">本レポートはAIシンセティックデータ（仮想顧客）による推定です。実際の数値は異なる場合があります。</div>
+  <div class="header-disc">本レポートはAIシンセティックデータ（付想顧客）による推定です。実際の数値は異なる場合があります。</div>
 </div>
-<div class="header-divider"></div>
+<div class="hd"></div>
 
 <div class="scores">
-  <div class="score-card" style="border-top-color:#D4AF37;">
-    <div class="score-label" style="color:#D4AF37;">AI 総合パワースコア</div>
-    <div class="score-big" style="color:#D4AF37;">{power_total}</div>
-    <div class="score-unit">/ 100点</div>
+  <div class="sc" style="border-top-color:#D4AF37;">
+    <div class="sc-lbl" style="color:#D4AF37;">AI 総合パワースコア</div>
+    <div class="sc-num" style="color:#D4AF37;">{power_total}</div>
+    <div class="sc-unit">/ 100点</div>
     <div class="bar-bg"><div class="bar-fill" style="width:{power_pct}%;"></div></div>
-    <div class="score-guide">DRM + BrandZ + GEO の総合評価<br>（詳細内訳は詳細版レポートで）</div>
+    <div class="sc-guide">DRM + BrandZ + GEO の総合評価<br>（詳細内訳は詳細版レポートで）</div>
   </div>
-  <div class="score-card" style="border-top-color:{rate_color};">
-    <div class="score-label" style="color:{rate_color};">推定問い合わせ率</div>
-    <div class="score-big" style="color:{rate_color};">{_esc(rate)}</div>
-    <div><span class="badge" style="background:{rate_color};">{rate_badge}</span></div>
-    <div class="score-guide">30%以上=高水準<br>12〜29%=標準　11%以下=要改善<br>仮想顧客が回遊後に問い合わせたいと感じた割合</div>
+  <div class="sc" style="border-top-color:{rate_color};">
+    <div class="sc-lbl" style="color:{rate_color};">推定問い合わせ率</div>
+    <div class="sc-num" style="color:{rate_color};">{_esc(rate)}</div>
+    <span class="badge" style="background:{rate_color};">{rate_badge}</span>
+    <div class="sc-guide">30%以上=高水準<br>12～29%=標準　11%以下=要改善<br>付想顧客が回遊後に<br>問い合わせたいと感じた割合</div>
   </div>
-  <div class="score-card" style="border-top-color:{drm_color};">
-    <div class="score-label" style="color:{drm_color};">マーケティング評価 DRM</div>
-    <div class="score-big" style="color:{drm_color};">{_esc(drm)}</div>
-    <div class="score-desc">{_esc(drm_desc)}</div>
-    <div class="score-sub">A=広告効果が出やすい<br>B=伸びしろあり<br>C=改善が先決<br>D=再構築が必要</div>
+  <div class="sc" style="border-top-color:{drm_color};">
+    <div class="sc-lbl" style="color:{drm_color};">マーケティング評価 DRM</div>
+    <div class="sc-num" style="color:{drm_color};">{_esc(drm)}</div>
+    <div class="sc-desc">{_esc(drm_desc)}</div>
+    <div class="sc-sub">A=広告効果が出やすい<br>B=伸びしろあり<br>C=改善が先決<br>D=再構築が必要</div>
   </div>
 </div>
 
 <div class="content">
   <div class="impression">
-    <div class="sec-label">第一印象  —  AIが仮想顧客として見たサイト全体の総評</div>
+    <div class="sec-lbl">第一印象  —  AIが付想顧客として見たサイト全体の総評</div>
     <div class="imp-text">{_esc(impression)}</div>
   </div>
   <div class="sw-row">
     <div class="sw-col">
       <div class="sw-head" style="background:#166534;">強み  —  集客に効いている点</div>
-      {strengths_html}
+      <div class="sw-items">{strengths_html}</div>
     </div>
     <div class="sw-col">
       <div class="sw-head" style="background:#991b1b;">改善点  —  優先的に直す箇所</div>
-      {weaknesses_html}
+      <div class="sw-items">{weaknesses_html}</div>
     </div>
   </div>
   <div class="priority">
-    <div class="priority-label">今すぐやるべき最重要改善  —  これだけで問い合わせ数が最も変わる</div>
-    <div class="priority-text">{_esc(priority)}</div>
+    <div class="pr-lbl">今すぐやるべき最重要改善  —  これだけで問い合わせ数が最も変わる</div>
+    <div class="pr-text">{_esc(priority)}</div>
   </div>
   <div class="guide">
     <div class="guide-title">このレポートの見方</div>
-    <div class="guide-row">
-      <span class="guide-key">- AI総合パワースコア</span>
-      <span class="guide-val">DRM・BrandZ・GEO 3軸の総合点（100点満点）。詳細な内訳は詳細版レポートで確認できます。</span>
-    </div>
-    <div class="guide-row">
-      <span class="guide-key">- 推定問い合わせ率</span>
-      <span class="guide-val">仮想顧客が回遊後に問い合わせたいと感じた割合。30%以上=高水準。</span>
-    </div>
-    <div class="guide-row">
-      <span class="guide-key">- DRM（A〜D）</span>
-      <span class="guide-val">集客→教育→販売の導線評価。Cは改善なく広告をかけると費用が無駄になるサイン。</span>
-    </div>
+    <div class="gr"><span class="gr-key">- AI総合パワースコア</span><span class="gr-val">DRM・BrandZ・GEO 3軸の総合点（100点満点）。詳細な内訳は詳細版レポートで確認できます。</span></div>
+    <div class="gr"><span class="gr-key">- 推定問い合わせ率</span><span class="gr-val">付想顧客が回遊後に問い合わせたいと感じた割合。30%以上=高水準。</span></div>
+    <div class="gr"><span class="gr-key">- DRM（A～D）</span><span class="gr-val">集客→教育→販売の導線評価。Cは改善なく広告をかけると費用が無駄になるサイン。</span></div>
   </div>
 </div>
 
 <div class="footer">
-  {logo_html}
-  <div class="footer-info">
-    <div class="footer-name">LIFE DESIGN LAB</div>
-    <div class="footer-email">inquiry.lifedesignlab@gmail.com</div>
-    <div class="footer-divider"></div>
-    <div class="upsell-title">詳細レポートをご希望の方へ</div>
-    <div class="upsell-text">このサマリーは診断結果のごく一部です。詳細版では強み・改善点の全項目、導線分析・競合比較・AIが生成した改善コピーをご確認いただけます。お気軽にご相談ください。</div>
+  {char_html}
+  <div class="footer-body">
+    {logo_html}
+    <div class="ft-name">LIFE DESIGN LAB</div>
+    <div class="ft-email">inquiry.lifedesignlab@gmail.com</div>
+    <div class="ft-div"></div>
+    <div class="ft-up-title">詳細レポートをご希望の方へ</div>
+    <div class="ft-up-text">このサマリーは診断結果のごく一部です。詳細版では強み・改善点の全項目、導線分析・競合比較・AIが生成した改善コピーをご確認いただけます。お気軽にご相談ください。</div>
   </div>
 </div>
 </body></html>"""
-
 
 def _render_html_to_pdf(html: str) -> bytes | None:
     """PlaywrightでHTMLをA4 PDFに変換。失敗時はNone。"""
