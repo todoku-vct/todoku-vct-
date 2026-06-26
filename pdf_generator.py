@@ -1675,11 +1675,11 @@ def generate_site_pdf(
         pdf.set_font(pdf._font, "B", 6.5)
         pdf.set_text_color(*WHITE)
         pdf.cell(26, 5, p_label, align="C")
-        # タイトルテキスト（折り返し対応）
+        # タイトルテキスト（折り返し対応・▲はfpdf2のword-break問題で削除）
         pdf.set_xy(wx + 28, y_card + 1.5)
         pdf.set_font(pdf._font, "B", 7)
         pdf.set_text_color(*RED_T)
-        pdf.multi_cell(col_w - 30, 4.5, f"▲ {point}", padding=(0, 2, 0, 2))
+        pdf.multi_cell(col_w - 30, 4.5, point, padding=(0, 2, 0, 2))
         # ボディ行: 理由テキスト
         pdf.set_xy(wx, y_card + header_h)
         pdf.set_fill_color(255, 245, 243)
