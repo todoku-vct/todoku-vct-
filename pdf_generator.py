@@ -26,8 +26,9 @@ _LINUX_FONT_R_NAMES = ["NotoSansCJK-Regular.ttc", "NotoSansCJKjp-Regular.otf", "
 _LINUX_FONT_B_NAMES = ["NotoSansCJK-Bold.ttc", "NotoSansCJKjp-Bold.otf", "NotoSansJP-Bold.ttf"]
 
 # ロゴ・キャラクター画像パス
-_LOGO_PATH      = os.path.join(os.path.dirname(__file__), "logo.png")
-_CHARACTER_PATH = os.path.join(os.path.dirname(__file__), "profile_dark.png")
+_LOGO_PATH           = os.path.join(os.path.dirname(__file__), "logo.png")
+_CHARACTER_PATH      = os.path.join(os.path.dirname(__file__), "profile_dark.png")
+_CHARACTER_WORK_PATH = os.path.join(os.path.dirname(__file__), "profile_work.png")
 
 # 変換済み一時ファイルキャッシュ
 _converted_cache: dict = {}
@@ -1922,7 +1923,7 @@ def _build_summary_html(
             return _b64.b64encode(fh.read()).decode()
 
     logo_b64 = _b64img(_LOGO_PATH)
-    char_b64 = _b64img(_CHARACTER_PATH)
+    char_b64 = _b64img(_CHARACTER_WORK_PATH) or _b64img(_CHARACTER_PATH)
     logo_html = f'<img class="logo-img" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ""
     char_html = f'<img class="char-img" src="data:image/png;base64,{char_b64}">' if char_b64 else ""
 
