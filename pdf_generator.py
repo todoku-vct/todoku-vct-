@@ -1925,6 +1925,7 @@ def _build_summary_html(
     logo_b64 = _b64img(_LOGO_PATH)
     char_b64 = _b64img(_CHARACTER_WORK_PATH) or _b64img(_CHARACTER_PATH)
     logo_html = f'<img class="logo-img" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ""
+    header_logo_html = f'<img class="header-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ""
     char_html = f'<img class="char-img" src="data:image/png;base64,{char_b64}">' if char_b64 else ""
 
     power_total, _, _, _ = _calc_power_score(site_report)
@@ -1994,7 +1995,9 @@ body {
   overflow: hidden; font-size: 10pt; line-height: 1.4;
 }
 .topline { height: 4px; background: #D4AF37; flex-shrink: 0; }
-.header { background: #080808; padding: 16px 22px 12px; flex-shrink: 0; }
+.header { background: #080808; padding: 16px 22px 12px; flex-shrink: 0; display: flex; align-items: flex-start; gap: 12px; }
+.header-text { flex: 1; }
+.header-logo { width: 42px; height: 42px; object-fit: contain; flex-shrink: 0; margin-top: 4px; }
 .header-sub { font-size: 6.5pt; color: #D4AF37; letter-spacing: .1em; margin-bottom: 6px; }
 .header-title { font-size: 19pt; font-weight: 700; color: #fff; margin-bottom: 6px; }
 .header-meta { font-size: 7pt; color: #7a6a3a; margin-bottom: 3px; }
@@ -2057,15 +2060,16 @@ body {
   position: absolute; bottom: 0; left: 0;
   height: 70mm; width: auto; object-fit: contain; opacity: 0.95;
   mix-blend-mode: screen;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 22%);
-  mask-image: linear-gradient(to right, transparent 0%, black 22%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 42%);
+  mask-image: linear-gradient(to right, transparent 0%, black 42%);
 }
 .footer-body {
-  margin-left: 66mm; padding: 14px 22px 14px 0;
+  margin-left: 76mm; padding: 14px 22px 14px 0;
   display: flex; flex-direction: column; justify-content: center;
   flex: 1; align-self: center;
 }
 .logo-img { width: 22px; height: 22px; object-fit: contain; margin-bottom: 5px; }
+.header-logo { width: 38px; height: 38px; object-fit: contain; flex-shrink: 0; margin-top: 2px; }
 .ft-name { font-size: 11pt; font-weight: 700; color: #fff; margin-bottom: 2px; }
 .ft-email { font-size: 7pt; color: #D4AF37; margin-bottom: 8px; }
 .ft-div { height: 1px; background: #2a2010; margin-bottom: 8px; }
@@ -2080,10 +2084,13 @@ body {
 <body>
 <div class="topline"></div>
 <div class="header">
-  <div class="header-sub">LIFE DESIGN LAB  —  トドク VCT  無料サイト診断レポート</div>
-  <div class="header-title">{_esc(title)}</div>
-  <div class="header-meta">{_esc(url_disp)}  |  {_esc(_device_clean)}  |  {now}</div>
-  <div class="header-disc">本レポートはAIシンセティックデータ（付想顧客）による推定です。実際の数値は異なる場合があります。</div>
+  <div class="header-text">
+    <div class="header-sub">LIFE DESIGN LAB  —  トドク VCT  無料サイト診断レポート</div>
+    <div class="header-title">{_esc(title)}</div>
+    <div class="header-meta">{_esc(url_disp)}  |  {_esc(_device_clean)}  |  {now}</div>
+    <div class="header-disc">本レポートはAIシンセティックデータ（付想顧客）による推定です。実際の数値は異なる場合があります。</div>
+  </div>
+  {header_logo_html}
 </div>
 <div class="hd"></div>
 
