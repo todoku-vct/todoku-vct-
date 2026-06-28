@@ -1952,6 +1952,7 @@ def _build_summary_html(
         "D": "\u6839\u672c\u7684\u306a\u518d\u69cb\u7bc9\u304c\u5fc5\u8981",
     }
     drm_desc = drm_descs.get(drm, "")
+    drm_pct  = {"A": 100, "B": 75, "C": 50, "D": 25}.get(str(drm), 0)
 
     def _esc(s: str) -> str:
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -1990,62 +1991,62 @@ body {
   background: #080808; color: #fff;
   width: 210mm; height: 297mm;
   display: flex; flex-direction: column;
-  overflow: hidden; font-size: 8pt; line-height: 1.4;
+  overflow: hidden; font-size: 10pt; line-height: 1.4;
 }
 .topline { height: 4px; background: #D4AF37; flex-shrink: 0; }
 .header { background: #080808; padding: 16px 22px 12px; flex-shrink: 0; }
-.header-sub { font-size: 5.5pt; color: #D4AF37; letter-spacing: .1em; margin-bottom: 6px; }
-.header-title { font-size: 17pt; font-weight: 700; color: #fff; margin-bottom: 6px; }
-.header-meta { font-size: 6pt; color: #7a6a3a; margin-bottom: 3px; }
-.header-disc { font-size: 4.5pt; color: #4a4020; }
-.hd { height: 1px; background: #1e1a08; margin: 10px 22px 0; }
+.header-sub { font-size: 6.5pt; color: #D4AF37; letter-spacing: .1em; margin-bottom: 6px; }
+.header-title { font-size: 19pt; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.header-meta { font-size: 7pt; color: #7a6a3a; margin-bottom: 3px; }
+.header-disc { font-size: 5.5pt; color: #4a4020; }
+.hd { height: 1px; background: #D4AF37; margin: 0 22px; }
 .scores {
-  display: flex; gap: 5px; padding: 10px 22px;
-  background: #080808; flex-shrink: 0;
+  display: flex; gap: 5px; padding: 12px 22px 18px;
+  background: #f5f3ec; flex-shrink: 0;
 }
 .sc {
-  flex: 1; background: #0f0e08;
+  flex: 1; background: #fff;
   border-top: 3px solid; padding: 12px 10px 10px;
   text-align: center; display: flex; flex-direction: column; align-items: center;
 }
-.sc-lbl { font-size: 5.5pt; font-weight: 700; margin-bottom: 6px; letter-spacing: .04em; }
+.sc-lbl { font-size: 6.5pt; font-weight: 700; margin-bottom: 6px; letter-spacing: .04em; }
 .sc-num { font-size: 38pt; font-weight: 700; line-height: 1; margin-bottom: 3px; }
-.sc-unit { font-size: 6pt; color: #8a7040; margin-bottom: 7px; }
-.bar-bg { width: calc(100% - 20px); height: 4px; background: #2a2010; border-radius: 2px; margin-bottom: 8px; }
-.bar-fill { height: 4px; background: #D4AF37; border-radius: 2px; }
+.sc-unit { font-size: 7pt; color: #6a5428; margin-bottom: 7px; }
+.bar-bg { width: calc(100% - 20px); height: 4px; background: #ddd8c8; border-radius: 2px; margin-bottom: 8px; }
+.bar-fill { height: 4px; border-radius: 2px; }
 .badge {
   display: inline-block; padding: 3px 16px; border-radius: 3px;
-  font-size: 7.5pt; font-weight: 700; color: #fff; margin-bottom: 7px;
+  font-size: 8.5pt; font-weight: 700; color: #fff; margin-bottom: 7px;
 }
-.sc-guide { font-size: 4.5pt; color: #5a4a28; line-height: 1.8; }
-.sc-desc { font-size: 6.5pt; color: #fff; font-weight: 700; margin-bottom: 5px; }
-.sc-sub { font-size: 4.5pt; color: #6a5a30; line-height: 1.8; }
+.sc-guide { font-size: 5.5pt; color: #4a3a18; line-height: 1.8; }
+.sc-desc { font-size: 7.5pt; color: #1a1510; font-weight: 700; margin-bottom: 5px; }
+.sc-sub { font-size: 5.5pt; color: #4a3a18; line-height: 1.8; }
 .content {
   flex: 1; background: #f5f3ec; padding: 12px 22px 10px;
-  color: #1a1510; display: flex; flex-direction: column; gap: 8px; min-height: 0;
+  color: #1a1510; display: flex; flex-direction: column; gap: 10px; min-height: 0;
 }
 .impression { background: #fff; border-left: 4px solid #D4AF37; padding: 8px 12px; flex-shrink: 0; }
-.sec-lbl { font-size: 5.5pt; font-weight: 700; color: #8a6a10; margin-bottom: 3px; }
-.imp-text { font-size: 7pt; color: #1a1510; line-height: 1.65; }
-.sw-row { display: flex; gap: 5px; flex: 1; min-height: 0; }
+.sec-lbl { font-size: 6.5pt; font-weight: 700; color: #8a6a10; margin-bottom: 3px; }
+.imp-text { font-size: 8pt; color: #1a1510; line-height: 1.65; }
+.sw-row { display: flex; gap: 5px; flex: 1; min-height: 0; max-height: 68mm; }
 .sw-col { flex: 1; display: flex; flex-direction: column; }
-.sw-head { padding: 6px 10px; font-size: 7pt; font-weight: 700; color: #fff; flex-shrink: 0; }
+.sw-head { padding: 5px 10px; font-size: 8pt; font-weight: 700; color: #fff; flex-shrink: 0; }
 .sw-items { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.sw-item { background: #fff; border-left: 3px solid; padding: 7px 10px; flex: 1; }
+.sw-item { background: #fff; border-left: 3px solid; padding: 6px 10px; flex: 1; overflow: hidden; }
 .s-item { border-left-color: #166534; }
 .w-item { border-left-color: #991b1b; }
-.sw-title { font-size: 7pt; font-weight: 700; margin-bottom: 3px; }
+.sw-title { font-size: 8pt; font-weight: 700; margin-bottom: 3px; }
 .s-title { color: #166534; }
 .w-title { color: #991b1b; }
-.sw-body { font-size: 5.5pt; line-height: 1.6; color: #2a2a2a; }
+.sw-body { font-size: 6.5pt; line-height: 1.6; color: #2a2a2a; }
 .priority { background: #fff9e0; border-left: 4px solid #92400e; padding: 8px 12px; flex-shrink: 0; }
-.pr-lbl { font-size: 5.5pt; font-weight: 700; color: #92400e; margin-bottom: 3px; }
-.pr-text { font-size: 8pt; font-weight: 700; color: #2a1a02; line-height: 1.55; }
-.guide { background: #e5e1d0; padding: 7px 12px; flex-shrink: 0; }
-.guide-title { font-size: 7pt; font-weight: 700; color: #5a4a10; margin-bottom: 5px; }
+.pr-lbl { font-size: 6.5pt; font-weight: 700; color: #92400e; margin-bottom: 3px; }
+.pr-text { font-size: 9pt; font-weight: 700; color: #2a1a02; line-height: 1.55; }
+.guide { background: #e5e1d0; padding: 8px 12px; flex-shrink: 0; margin-top: auto; }
+.guide-title { font-size: 8pt; font-weight: 700; color: #5a4a10; margin-bottom: 5px; }
 .gr { display: flex; gap: 6px; margin-bottom: 3px; }
-.gr-key { font-size: 5pt; font-weight: 700; color: #5a4a10; min-width: 88px; }
-.gr-val { font-size: 5pt; color: #3a2a08; line-height: 1.6; flex: 1; }
+.gr-key { font-size: 6pt; font-weight: 700; color: #5a4a10; min-width: 96px; }
+.gr-val { font-size: 6pt; color: #3a2a08; line-height: 1.6; flex: 1; }
 .footer {
   background: #080808; border-top: 3px solid #D4AF37;
   flex-shrink: 0; position: relative;
@@ -2053,20 +2054,23 @@ body {
   overflow: hidden; height: 62mm;
 }
 .char-img {
-  position: absolute; bottom: 0; left: 18mm;
-  height: 66mm; width: auto; object-fit: contain; opacity: 0.92;
+  position: absolute; bottom: 0; left: 0;
+  height: 70mm; width: auto; object-fit: contain; opacity: 0.95;
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 22%);
+  mask-image: linear-gradient(to right, transparent 0%, black 22%);
 }
 .footer-body {
-  margin-left: 60mm; padding: 14px 22px 14px 0;
+  margin-left: 66mm; padding: 14px 22px 14px 0;
   display: flex; flex-direction: column; justify-content: center;
   flex: 1; align-self: center;
 }
 .logo-img { width: 22px; height: 22px; object-fit: contain; margin-bottom: 5px; }
-.ft-name { font-size: 9pt; font-weight: 700; color: #fff; margin-bottom: 2px; }
-.ft-email { font-size: 6pt; color: #D4AF37; margin-bottom: 8px; }
+.ft-name { font-size: 11pt; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.ft-email { font-size: 7pt; color: #D4AF37; margin-bottom: 8px; }
 .ft-div { height: 1px; background: #2a2010; margin-bottom: 8px; }
-.ft-up-title { font-size: 7pt; font-weight: 700; color: #D4AF37; margin-bottom: 3px; }
-.ft-up-text { font-size: 5.5pt; color: #8a7a4a; line-height: 1.65; }
+.ft-up-title { font-size: 8pt; font-weight: 700; color: #D4AF37; margin-bottom: 3px; }
+.ft-up-text { font-size: 6.5pt; color: #8a7a4a; line-height: 1.65; }
 """
 
     return f"""<!DOCTYPE html>
@@ -2088,19 +2092,21 @@ body {
     <div class="sc-lbl" style="color:#D4AF37;">AI 総合パワースコア</div>
     <div class="sc-num" style="color:#D4AF37;">{power_total}</div>
     <div class="sc-unit">/ 100点</div>
-    <div class="bar-bg"><div class="bar-fill" style="width:{power_pct}%;"></div></div>
+    <div class="bar-bg"><div class="bar-fill" style="width:{power_pct}%;background:#D4AF37;"></div></div>
     <div class="sc-guide">DRM + BrandZ + GEO の総合評価<br>（詳細内訳は詳細版レポートで）</div>
   </div>
   <div class="sc" style="border-top-color:{rate_color};">
     <div class="sc-lbl" style="color:{rate_color};">推定問い合わせ率</div>
     <div class="sc-num" style="color:{rate_color};">{_esc(rate)}</div>
     <span class="badge" style="background:{rate_color};">{rate_badge}</span>
+    <div class="bar-bg"><div class="bar-fill" style="width:{min(rate_num,100)}%;background:{rate_color};"></div></div>
     <div class="sc-guide">30%以上=高水準<br>12～29%=標準　11%以下=要改善<br>付想顧客が回遊後に<br>問い合わせたいと感じた割合</div>
   </div>
   <div class="sc" style="border-top-color:{drm_color};">
     <div class="sc-lbl" style="color:{drm_color};">マーケティング評価 DRM</div>
     <div class="sc-num" style="color:{drm_color};">{_esc(drm)}</div>
     <div class="sc-desc">{_esc(drm_desc)}</div>
+    <div class="bar-bg"><div class="bar-fill" style="width:{drm_pct}%;background:{drm_color};"></div></div>
     <div class="sc-sub">A=広告効果が出やすい<br>B=伸びしろあり<br>C=改善が先決<br>D=再構築が必要</div>
   </div>
 </div>
