@@ -931,8 +931,10 @@ def generate_pdf(
     pdf.section_bar("改善が必要な箇所")
     for w in report.get("weaknesses", []):
         pdf.colored_block(f"✗  {w.get('point', '')}  —  {w.get('reason', '')}", RED_BG, RED_T)
+        if w.get("current_text"):
+            pdf.colored_block(f"現在: {w['current_text']}", AMBER_BG, AMBER_T, indent=6)
         if w.get("suggestion"):
-            pdf.colored_block(f"→ 改善案: {w['suggestion']}", GREEN_BG, GREEN_T, indent=6)
+            pdf.colored_block(f"改善後: {w['suggestion']}", GREEN_BG, GREEN_T, indent=6)
     pdf.ln(2)
 
     # 最重要改善
@@ -2396,7 +2398,10 @@ def _generate_summary_pdf_fpdf2(
             pdf.set_xy(rx + 4, iy + 10)
             pdf.set_font(fn, "", 6)
             pdf.set_text_color(100, 50, 50)
-            pdf.multi_cell(col_w - 6, 3.8, w.get("suggestion", "")[:65])
+            cur = w.get("current_text", "")
+            sug = w.get("suggestion", "")
+            combined = (f"現在: {cur[:30]}\n改善後: {sug[:30]}" if cur else f"改善後: {sug[:55]}")
+            pdf.multi_cell(col_w - 6, 3.8, combined)
 
     # 最重要改善
     pdf.set_fill_color(255, 252, 230)
