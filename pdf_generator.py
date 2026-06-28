@@ -724,8 +724,8 @@ class _Base(FPDF):
         ]
         if step_scores:
             chart_y = self.get_y()
-            chart_area_h = 88  # 五角形エリアの高さ（ラベルが収まるよう広げる）
-            chart_area_w = 96  # 左カラム幅
+            chart_area_h = 62  # 五角形エリアの高さ
+            chart_area_w = 90  # 左カラム幅
 
             # 背景
             self.set_fill_color(248, 244, 234)
@@ -735,8 +735,8 @@ class _Base(FPDF):
 
             # 五角形チャート（左エリアの中央）
             pentagon_cx = lm + chart_area_w / 2
-            pentagon_cy = chart_y + chart_area_h / 2 + 5
-            pentagon_r = 27
+            pentagon_cy = chart_y + chart_area_h / 2 + 2
+            pentagon_r = 19
 
             score_vals = [step_scores.get(key, 0) for _, key in steps]
             step_labels = [label for label, _ in steps]
@@ -747,7 +747,7 @@ class _Base(FPDF):
             rw = 180 - chart_area_w - 3
             step_full_labels = ["S1 構造化（数字・ファクト整理）", "S2 How to（方法・手順コンテンツ）", "S3 Q&A（向く人/向かない人）", "S4 比較表（自社他社比較）", "S5 事例（数字入りビフォーアフター）"]
             for i, ((label, key), full_label) in enumerate(zip(steps, step_full_labels)):
-                iy = chart_y + 6 + i * 14
+                iy = chart_y + 5 + i * 11
                 val = step_scores.get(key, 0)
                 try:
                     val_num = min(5, max(0, int(val)))
