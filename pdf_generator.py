@@ -1922,10 +1922,9 @@ def _build_summary_html(
             import base64 as _b64
             return _b64.b64encode(fh.read()).decode()
 
-    logo_b64 = _b64img(_LOGO_PATH)
     char_b64 = _b64img(_CHARACTER_WORK_PATH) or _b64img(_CHARACTER_PATH)
-    logo_html = f'<img class="logo-img" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ""
-    header_logo_html = f'<img class="header-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ""
+    logo_html = ""
+    header_logo_html = ""
     char_html = f'<img class="char-img" src="data:image/png;base64,{char_b64}">' if char_b64 else ""
 
     power_total, _, _, _ = _calc_power_score(site_report)
