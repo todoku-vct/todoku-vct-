@@ -1223,15 +1223,16 @@ with tab_site:
                         site_url=_script_url,
                         profession=st.session_state.get("site_profession", ""),
                     )
-                    fname_script = f"VCT_台本_{st.session_state.get('site_profession','')}_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+                    fname_script = f"VCT_台本_{st.session_state.get('site_profession','')}_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')}.docx"
                     st.download_button(
-                        "📋 Zoom解説台本をダウンロード",
+                        "📋 Zoom解説台本をダウンロード（Word / Googleドキュメント用）",
                         data=script_pdf_bytes,
                         file_name=fname_script,
-                        mime="application/pdf",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         use_container_width=True,
                         type="primary",
                     )
+                    st.caption("ダウンロード後、GoogleドライブにアップロードするとそのままGoogleドキュメントとしてZoom中に開けます。")
                 except Exception as e:
                     st.warning(f"台本生成に失敗しました: {e}")
 
