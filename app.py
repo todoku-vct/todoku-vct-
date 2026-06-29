@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 import streamlit as st
 from persona_generator import (
-    generate_personas, generate_custom_personas,
+    generate_personas,
     format_persona_label, PROFESSION_GROUPS
 )
 from llm_client import get_persona_reaction, generate_report, generate_ab_report, generate_improved_copy, analyze_site
@@ -11,7 +11,7 @@ from web_scraper import scrape_site, extract_emails_from_pages
 from email_sender import send_report as send_email_report, is_configured as email_is_configured
 from db import save_result, load_history, load_detail, load_client_names, delete_record
 from pdf_generator import generate_pdf, generate_ab_pdf, generate_site_pdf, generate_summary_pdf, generate_script_pdf
-from llm_client import generate_consultation_script
+from llm_client import generate_consultation_script, generate_ai_personas
 
 st.set_page_config(page_title="トドク VCT", page_icon="🏛", layout="wide")
 
@@ -528,83 +528,12 @@ with tab_test:
         custom_settings = {}
 
         if use_custom_persona:
-            st.caption("ターゲット顧客を自分で定義します")
-
-            # 年齢帯：スライダー（20〜75歳、5歳刻み＝12目盛り）
-            age_range = st.slider("お客さんの年齢帯", 20, 75, (35, 65), step=5, format="%d歳")
-
-            # 男女比
-            gender_opt = st.selectbox("男女比", ["半々（5:5）", "男性が多め（7:3）", "女性が多め（7:3）", "男性のみ", "女性のみ"])
-            gender_map = {
-                "半々（5:5）": {"男性": 0.5, "女性": 0.5},
-                "男性が多め（7:3）": {"男性": 0.7, "女性": 0.3},
-                "女性が多め（7:3）": {"男性": 0.3, "女性": 0.7},
-                "男性のみ": {"男性": 1.0, "女性": 0.0},
-                "女性のみ": {"男性": 0.0, "女性": 1.0},
-            }
-
-            # 顧客の悩み（最大10パターン）
-            problem_text = st.text_area(
-                "お客さんが抱えている悩み・状況（1行に1つ、最大10個まで）",
-                placeholder="例：\n相続手続きで何から始めればいいかわからない\n会社を設立したいが書類が複雑で困っている\nビザの手続きが不安",
-                height=120,
+            st.caption("ターゲット顧客の情報を入力するとAIがリアルなペルソナを自動生成します")
+            target_description = st.text_area(
+                "ターゲット顧客の補足情報（任意）",
+                placeholder="例：\n40〜60代の女性が中心\n美容に関心が高く、SNSでよく情報収集する\n価格より効果・安心感を重視する傾向がある",
+                height=100,
             )
-
-            # 10段階スライダー（1=低い ↔ 10=高い）
-            it_val = st.slider("デジタルへの慣れ（1=ほぼ使わない　10=バリバリ使いこなす）", 1, 10, 5)
-            price_val = st.slider("値段へのこだわり（1=とにかく安くしたい　10=品質重視で気にしない）", 1, 10, 5)
-            urgency_val = st.slider("急ぎ度（1=じっくり検討したい　10=今すぐ解決したい）", 1, 10, 5)
-
-            def it_label(v):
-                if v <= 3: return "低い（デジタルが苦手）"
-                if v <= 7: return "普通（日常的にスマホ・PCを使う）"
-                return "高い（SNS・アプリを積極活用）"
-
-            def price_label(v):
-                if v <= 3: return "かなり敏感（コストを最優先に考える）"
-                if v <= 7: return "普通（価値と価格のバランスを重視する）"
-                return "あまり気にしない（質や安心感を優先する）"
-
-            def urgency_label(v):
-                if v <= 3: return "低い（じっくり時間をかけて検討したい）"
-                if v <= 7: return "中程度（近いうちに決めたい）"
-                return "高い（できるだけ早く解決したい）"
-
-            # 重視すること（チェックボックス＋自由入力、最大10個）
-            st.caption("お客さんが重視すること（最大10個まで選べます）")
-            trust_presets = [
-                "実績・件数が多い", "料金が明確", "対応が丁寧", "初回相談が無料",
-                "地元・近所", "口コミ・評判が良い", "専門性が高い", "レスポンスが早い",
-                "アフターサポートが充実", "オンライン対応可"
-            ]
-            trust_selected = []
-            cols = st.columns(2)
-            for i, opt in enumerate(trust_presets):
-                if cols[i % 2].checkbox(opt, key=f"trust_{i}"):
-                    trust_selected.append(opt)
-            trust_custom = st.text_input("その他（カンマ区切りで追加）", placeholder="例：土日対応, 女性担当者希望")
-            if trust_custom:
-                trust_selected += [t.strip() for t in trust_custom.split(",") if t.strip()]
-            trust_selected = trust_selected[:10] or ["信頼性・実績を重視"]
-
-            problems = []
-            for line in problem_text.strip().split("\n")[:10]:
-                if line.strip():
-                    problems.append({"type": line.strip()[:15], "detail": line.strip()})
-            if not problems:
-                problems = [{"type": "サービスを検討中", "detail": "このサービスに興味がある"}]
-
-            display_profession = custom_service if (profession == "カスタム（自由入力）" and custom_service) else profession
-            custom_settings = {
-                "profession": display_profession,
-                "age_range": list(age_range),
-                "gender_ratio": gender_map[gender_opt],
-                "problems": problems,
-                "it_literacy": it_label(it_val),
-                "price_sensitivity": price_label(price_val),
-                "urgency": urgency_label(urgency_val),
-                "trust_factors": trust_selected,
-            }
 
     with col1:
         if ab_mode:
@@ -651,7 +580,10 @@ with tab_test:
 
         def make_personas():
             if use_custom_persona:
-                return generate_custom_personas(custom_settings, persona_count)
+                raw = generate_ai_personas(display_profession, persona_count, target_description)
+                for p in raw:
+                    p.setdefault("profession", display_profession)
+                return raw
             return generate_personas(profession, persona_count, custom_label=display_profession)
 
         # --- A/Bテストモード ---

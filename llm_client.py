@@ -230,6 +230,22 @@ def generate_ab_report(
     return _extract_json(text)
 
 
+def generate_ai_personas(profession: str, count: int, target_description: str = "") -> list[dict]:
+    """AIがビジネス情報からリアルなペルソナをcount人分生成する。"""
+    prompt_template = _load_prompt("custom_persona_prompt.txt")
+    prompt = _format_prompt(
+        prompt_template,
+        profession=profession,
+        count=count,
+        target_description=target_description or "特になし",
+    )
+    text = _call_claude(FAST_MODEL, prompt, max_tokens=3000)
+    result = _extract_json(text)
+    if isinstance(result, list):
+        return result
+    return []
+
+
 def generate_consultation_script(
     site_report: dict,
     site_url: str,
