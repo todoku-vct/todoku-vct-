@@ -2629,9 +2629,36 @@ def generate_script_pdf(script: dict, site_url: str, profession: str) -> bytes:
             _normal(f"解説: {item['explanation']}", italic=True, color=RGBColor(0x60, 0x50, 0x20))
         doc.add_paragraph()
 
-    # ── ⑤ 最重要アクション ──
+    # ── ⑤ GEOスコア ──
+    geo = script.get("geo_section", {})
+    if geo.get("script"):
+        _label(f"⑤ GEOスコア解説　{geo.get('duration','3分')}")
+        _script(geo.get("script", ""))
+        for item in geo.get("items", []):
+            p = doc.add_paragraph()
+            run = p.add_run(f"{item.get('category','')}  {item.get('score','')}")
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = RGBColor(0x78, 0x50, 0x00)
+            _normal(item.get("explanation", ""), italic=True)
+        doc.add_paragraph()
+
+    # ── ⑥ 導線・ナビゲーション ──
+    nav = script.get("navigation_section", {})
+    if nav.get("script") and nav.get("items"):
+        _label(f"⑥ 導線・ナビゲーション分析　{nav.get('duration','3分')}")
+        _script(nav.get("script", ""))
+        for item in nav.get("items", []):
+            p = doc.add_paragraph()
+            run = p.add_run(f"【{item.get('page','')}】{item.get('issue','')}")
+            run.bold = True
+            run.font.color.rgb = RGBColor(0xB9, 0x1C, 0x1C)
+            _normal(f"改善: {item.get('suggestion','')}", color=RGBColor(0x15, 0x80, 0x3D))
+        doc.add_paragraph()
+
+    # ── ⑦ 最重要アクション ──
     pri = script.get("priority_action", {})
-    _label(f"⑤ 最重要アクション　{pri.get('duration','5分')}")
+    _label(f"⑦ 最重要アクション　{pri.get('duration','5分')}")
     _script(pri.get("script", ""))
     if pri.get("action"):
         _normal(f"アクション: {pri['action']}", color=RGBColor(0x92, 0x40, 0x0E))
@@ -2639,15 +2666,15 @@ def generate_script_pdf(script: dict, site_url: str, profession: str) -> bytes:
         _normal(f"期待される変化: {pri['expected_result']}", color=RGBColor(0x15, 0x80, 0x3D))
     doc.add_paragraph()
 
-    # ── ⑥ 次のステップ ──
+    # ── ⑧ 次のステップ ──
     nxt = script.get("next_steps", {})
-    _label(f"⑥ 次のステップ　{nxt.get('duration','3分')}")
+    _label(f"⑧ 次のステップ　{nxt.get('duration','2分')}")
     _script(nxt.get("script", ""))
     doc.add_paragraph()
 
-    # ── ⑦ 予想Q&A ──
+    # ── ⑨ 予想Q&A ──
     qa_list = script.get("qa_list", [])
-    _label(f"⑦ 予想 Q&A　{len(qa_list)}問")
+    _label(f"⑨ 予想 Q&A　{len(qa_list)}問")
     doc.add_paragraph()
     for i, qa in enumerate(qa_list, 1):
         _qa(qa.get("question", ""), qa.get("answer", ""), i)
