@@ -247,5 +247,5 @@ def generate_consultation_script(
         drm_score=site_report.get("marketing_insights", {}).get("drm_score", "不明"),
         report_json=json.dumps(site_report, ensure_ascii=False, indent=2),
     )
-    text = _call_claude(SMART_MODEL, prompt, max_tokens=4000)
+    text = _call_claude(SMART_MODEL, prompt, max_tokens=8000)
     return _extract_json(text)

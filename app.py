@@ -1218,6 +1218,9 @@ with tab_site:
                         profession=st.session_state.get("site_profession", ""),
                         power_score=_power_score,
                     )
+                    if "error" in script_data:
+                        st.error(f"台本生成エラー: {script_data.get('error')} / {str(script_data.get('raw',''))[:200]}")
+                        st.stop()
                     script_pdf_bytes = generate_script_pdf(
                         script=script_data,
                         site_url=_script_url,
