@@ -483,7 +483,7 @@ def _mi_html(mi, margin_top="0.7rem"):
 </div>"""
 
 # ===== タブ =====
-tab_test, tab_site, tab_history = st.tabs(["テスト実行", "🌐 サイト全体分析", "履歴・トラッキング"])
+tab_site, tab_test, tab_history = st.tabs(["🌐 サイト全体分析", "テスト実行", "履歴・トラッキング"])
 
 
 # =====================================================================
@@ -933,18 +933,12 @@ with tab_site:
     use_site_custom = st.toggle("カスタムペルソナ設定を使う", value=False, key="site_custom_toggle")
 
     if use_site_custom:
-        st.caption("ターゲット顧客を自分で定義します")
+        st.caption("ターゲット顧客を設定するとAIがその顧客視点でサイトを評価します")
+
         site_age = st.slider("お客さんの年齢帯", 20, 75, (35, 65), step=5, format="%d歳", key="site_age")
         site_gender_opt = st.selectbox("男女比", ["半々（5:5）", "男性が多め（7:3）", "女性が多め（7:3）", "男性のみ", "女性のみ"], key="site_gender")
-        site_problem_text = st.text_area(
-            "お客さんが抱えている悩み・状況（1行に1つ、最大10個まで）",
-            placeholder="例：\n肌荒れがひどくて皮膚科を探している\nアトピーで子供が困っている\n保険診療で診てもらいたい",
-            height=120, key="site_problem"
-        )
-        site_it = st.slider("デジタルへの慣れ（1=ほぼ使わない　10=バリバリ使いこなす）", 1, 10, 5, key="site_it")
-        site_price = st.slider("値段へのこだわり（1=とにかく安くしたい　10=品質重視で気にしない）", 1, 10, 5, key="site_price")
-        site_urgency = st.slider("急ぎ度（1=じっくり検討したい　10=今すぐ解決したい）", 1, 10, 5, key="site_urgency")
-        st.caption("お客さんが重視すること（最大10個まで選べます）")
+
+        st.caption("お客さんが重視すること（複数選択可）")
         site_trust_presets = [
             "実績・件数が多い", "料金が明確", "対応が丁寧", "初回相談が無料",
             "地元・近所", "口コミ・評判が良い", "専門性が高い", "レスポンスが早い",
@@ -960,17 +954,18 @@ with tab_site:
             site_trust_selected += [t.strip() for t in site_trust_custom.split(",") if t.strip()]
         site_trust_selected = site_trust_selected[:10] or ["信頼性・実績を重視"]
 
-        def _it_l(v): return "低い（デジタルが苦手）" if v<=3 else ("普通" if v<=7 else "高い（SNS・アプリを積極活用）")
-        def _pr_l(v): return "敏感（コスト最優先）" if v<=3 else ("普通" if v<=7 else "気にしない（質・安心感優先）")
-        def _ur_l(v): return "低い（じっくり検討）" if v<=3 else ("中程度" if v<=7 else "高い（今すぐ解決したい）")
+        site_target_note = st.text_area(
+            "ターゲット顧客の補足情報（任意）",
+            placeholder="例：スマホ検索が多い、価格より効果重視、SNSで情報収集する層",
+            height=80, key="site_target_note"
+        )
 
         customer_profile = (
             f"年齢帯：{site_age[0]}〜{site_age[1]}歳 / 性別：{site_gender_opt} / "
-            f"デジタル慣れ：{_it_l(site_it)} / 価格感度：{_pr_l(site_price)} / 緊急度：{_ur_l(site_urgency)} / "
             f"重視すること：{', '.join(site_trust_selected)}"
         )
-        if site_problem_text.strip():
-            customer_profile += f" / 悩み：{site_problem_text.strip()[:200]}"
+        if site_target_note.strip():
+            customer_profile += f" / 補足：{site_target_note.strip()[:200]}"
     else:
         customer_profile = ""
     st.divider()
