@@ -98,6 +98,33 @@ def _to_rgb_path(src_path: str, bg=(8, 8, 8)) -> str:
     _converted_cache[key] = tmp.name
     return tmp.name
 
+def _logo_on_pdf_bg(src_path: str, target_bg=(8, 8, 8), tolerance=25) -> str:
+    """ロゴ画像の背景色をPDF背景色に統一する。コーナーピクセルで背景色を自動検出して置換。"""
+    key = ("logo_bg_match", src_path, target_bg, tolerance)
+    if key in _converted_cache and os.path.exists(_converted_cache[key]):
+        return _converted_cache[key]
+    img = _PILImage.open(src_path)
+    if img.mode == "P":
+        img = img.convert("RGBA")
+    if img.mode == "RGBA":
+        bg = _PILImage.new("RGB", img.size, target_bg)
+        bg.paste(img, mask=img.split()[3])
+        img = bg
+    elif img.mode != "RGB":
+        img = img.convert("RGB")
+    w, h = img.size
+    arr = img.load()
+    sr, sg, sb = arr[0, 0]  # 左上コーナーの色 = 背景色として検出
+    for y in range(h):
+        for x in range(w):
+            r, g, b = arr[x, y]
+            if abs(r - sr) <= tolerance and abs(g - sg) <= tolerance and abs(b - sb) <= tolerance:
+                arr[x, y] = target_bg
+    tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+    img.save(tmp.name, "PNG")
+    _converted_cache[key] = tmp.name
+    return tmp.name
+
 # ブランドカラー (R, G, B) — Black & Gold テーマ
 NAVY      = (18, 18, 18)      # 本文・テキスト用の深黒（旧NAVY代替）
 NAVY_DARK = (8, 8, 8)         # カバー背景用の最深黒
@@ -1111,7 +1138,7 @@ class _SitePDF(_Base):
 
         # ロゴ（左端に小さく配置）
         if os.path.exists(_LOGO_PATH):
-            self.image(_to_rgb_path(_LOGO_PATH, bg=(8,8,8)), x=4, y=2, w=22)
+            self.image(_logo_on_pdf_bg(_LOGO_PATH, target_bg=(8,8,8)), x=4, y=2, w=22)
 
         # テキストを全幅（210mm）中央揃え
         self.set_xy(0, 5)
@@ -1350,7 +1377,7 @@ class _SitePDF(_Base):
         logo_y = 12
         if os.path.exists(_LOGO_PATH):
             logo_size = 36
-            self.image(_to_rgb_path(_LOGO_PATH, bg=(8,8,8)), x=105 - logo_size / 2, y=logo_y, w=logo_size)
+            self.image(_logo_on_pdf_bg(_LOGO_PATH, target_bg=(8,8,8)), x=105 - logo_size / 2, y=logo_y, w=logo_size)
             logo_y += logo_size + 1
         else:
             self.set_y(logo_y + 4)
