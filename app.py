@@ -10,7 +10,8 @@ from llm_client import get_persona_reaction, generate_report, generate_ab_report
 from web_scraper import scrape_site, extract_emails_from_pages
 from email_sender import send_report as send_email_report, is_configured as email_is_configured
 from db import save_result, load_history, load_detail, load_client_names, delete_record
-from pdf_generator import generate_pdf, generate_ab_pdf, generate_site_pdf, generate_summary_pdf
+from pdf_generator import generate_pdf, generate_ab_pdf, generate_site_pdf, generate_summary_pdf, generate_script_pdf
+from llm_client import generate_consultation_script
 
 st.set_page_config(page_title="トドク VCT", page_icon="🏛", layout="wide")
 
@@ -1201,6 +1202,38 @@ with tab_site:
             )
         except Exception as e:
             st.warning(f"PDF生成に失敗しました: {e}")
+
+        # ── Zoom解説台本PDF ────────────────────────────────────────
+        st.divider()
+        st.markdown("#### 🎤 30分Zoom解説台本（コンサルタント専用）")
+        st.caption("このボタンはあなた専用です。クライアントには渡しません。")
+        if st.button("台本を生成する", use_container_width=True):
+            with st.spinner("台本を生成中…（30秒ほどかかります）"):
+                try:
+                    _script_url = pages[0]["url"].split("/")[0] + "//" + pages[0]["url"].split("/")[2] if pages else ""
+                    _power_score, _, _, _ = __import__("pdf_generator")._calc_power_score(sr)
+                    script_data = generate_consultation_script(
+                        site_report=sr,
+                        site_url=_script_url,
+                        profession=st.session_state.get("site_profession", ""),
+                        power_score=_power_score,
+                    )
+                    script_pdf_bytes = generate_script_pdf(
+                        script=script_data,
+                        site_url=_script_url,
+                        profession=st.session_state.get("site_profession", ""),
+                    )
+                    fname_script = f"VCT_台本_{st.session_state.get('site_profession','')}_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+                    st.download_button(
+                        "📋 Zoom解説台本をダウンロード",
+                        data=script_pdf_bytes,
+                        file_name=fname_script,
+                        mime="application/pdf",
+                        use_container_width=True,
+                        type="primary",
+                    )
+                except Exception as e:
+                    st.warning(f"台本生成に失敗しました: {e}")
 
         # ── 簡略版PDF（無料配布・メール添付用） ────────────────────
         st.divider()

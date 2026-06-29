@@ -228,3 +228,24 @@ def generate_ab_report(
 
     text = _call_claude(SMART_MODEL, prompt, max_tokens=1200)
     return _extract_json(text)
+
+
+def generate_consultation_script(
+    site_report: dict,
+    site_url: str,
+    profession: str,
+    power_score: int,
+) -> dict:
+    """30分Zoom解説セッション用の台本をAIで生成する。"""
+    prompt_template = _load_prompt("script_prompt.txt")
+    prompt = _format_prompt(
+        prompt_template,
+        site_url=site_url,
+        profession=profession,
+        power_score=power_score,
+        inquiry_rate=site_report.get("inquiry_rate", "不明"),
+        drm_score=site_report.get("marketing_insights", {}).get("drm_score", "不明"),
+        report_json=json.dumps(site_report, ensure_ascii=False, indent=2),
+    )
+    text = _call_claude(SMART_MODEL, prompt, max_tokens=4000)
+    return _extract_json(text)

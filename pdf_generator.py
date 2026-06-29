@@ -2497,3 +2497,166 @@ def _generate_summary_pdf_fpdf2(
     pdf.cell(inner, 5, "お気軽にご相談ください。")
 
     return bytes(pdf.output())
+
+
+def generate_script_pdf(script: dict, site_url: str, profession: str) -> bytes:
+    """30分Zoom解説台本をPDFに変換する（コンサルタント専用）。"""
+    pdf = _ReportPDF()
+    pdf.set_margins(15, 15, 15)
+    pdf.set_auto_page_break(auto=True, margin=18)
+    fn = pdf._font
+    inner = 180
+
+    def _page_header(title: str):
+        pdf.set_fill_color(*NAVY_DARK)
+        pdf.rect(0, 0, 210, 18, style="F")
+        pdf.set_fill_color(*GOLD)
+        pdf.rect(0, 18, 210, 0.8, style="F")
+        pdf.set_xy(15, 5)
+        pdf.set_font(fn, "B", 10)
+        pdf.set_text_color(*GOLD)
+        pdf.cell(90, 8, "【コンサルタント専用】30分解説台本")
+        pdf.set_xy(105, 5)
+        pdf.set_font(fn, "", 7)
+        pdf.set_text_color(180, 160, 100)
+        pdf.cell(90, 8, f"{profession}  {site_url[:40]}", align="R")
+        pdf.set_y(24)
+        pdf.set_text_color(0, 0, 0)
+
+    def _section(label: str, duration: str, color: tuple):
+        pdf.set_fill_color(*color)
+        pdf.rect(15, pdf.get_y(), inner, 7, style="F")
+        pdf.set_xy(15, pdf.get_y())
+        pdf.set_font(fn, "B", 9)
+        pdf.set_text_color(*WHITE)
+        pdf.cell(150, 7, label)
+        pdf.set_font(fn, "", 8)
+        pdf.set_text_color(220, 220, 180)
+        pdf.cell(30, 7, duration, align="R")
+        pdf.ln(9)
+        pdf.set_text_color(0, 0, 0)
+
+    def _script_block(text: str):
+        pdf.set_fill_color(248, 246, 238)
+        pdf.set_font(fn, "", 8.5)
+        pdf.set_text_color(30, 25, 10)
+        pdf.multi_cell(inner, 5.5, f"▶ {text}", fill=True, padding=(4, 6, 4, 6))
+        pdf.ln(3)
+
+    def _talking_point(text: str):
+        pdf.set_font(fn, "", 8)
+        pdf.set_text_color(50, 45, 30)
+        pdf.set_x(15)
+        pdf.cell(4, 5.5, "・")
+        pdf.multi_cell(inner - 4, 5.5, text)
+
+    def _before_after_block(item: dict):
+        cur = item.get("current_text", "")
+        sug = item.get("suggestion", "")
+        exp = item.get("explanation", "")
+        point = item.get("point", "")
+        pdf.set_font(fn, "B", 8)
+        pdf.set_text_color(*RED_T)
+        pdf.set_x(15)
+        pdf.cell(inner, 5, f"✗ {point}")
+        pdf.ln(6)
+        if cur:
+            pdf.set_fill_color(254, 242, 242)
+            pdf.set_font(fn, "", 8)
+            pdf.set_text_color(120, 30, 30)
+            pdf.multi_cell(inner, 5, f"現在: {cur}", fill=True, padding=(3, 6, 3, 6))
+            pdf.ln(1)
+        if sug:
+            pdf.set_fill_color(236, 253, 245)
+            pdf.set_font(fn, "", 8)
+            pdf.set_text_color(21, 100, 50)
+            pdf.multi_cell(inner, 5, f"改善後: {sug}", fill=True, padding=(3, 6, 3, 6))
+            pdf.ln(1)
+        if exp:
+            pdf.set_font(fn, "I", 7.5)
+            pdf.set_text_color(80, 70, 40)
+            pdf.set_x(15)
+            pdf.multi_cell(inner, 4.5, f"解説: {exp}")
+        pdf.ln(4)
+
+    def _qa_block(q: str, a: str, idx: int):
+        pdf.set_fill_color(240, 236, 220)
+        pdf.set_font(fn, "B", 8)
+        pdf.set_text_color(80, 60, 10)
+        pdf.multi_cell(inner, 5.5, f"Q{idx}. {q}", fill=True, padding=(3, 6, 3, 6))
+        pdf.ln(1)
+        pdf.set_fill_color(250, 248, 240)
+        pdf.set_font(fn, "", 8)
+        pdf.set_text_color(30, 25, 10)
+        pdf.multi_cell(inner, 5.5, f"A. {a}", fill=True, padding=(3, 6, 3, 6))
+        pdf.ln(4)
+
+    # ─── ページ1: 開始〜スコア概要 ───
+    pdf.add_page()
+    _page_header("opening")
+
+    _section("① オープニング", script.get("opening", {}).get("duration", "2分"), (40, 35, 18))
+    _script_block(script.get("opening", {}).get("script", ""))
+    pdf.ln(4)
+
+    _section("② スコア概要", script.get("score_overview", {}).get("duration", "5分"), (50, 40, 10))
+    _script_block(script.get("score_overview", {}).get("script", ""))
+    for tp in script.get("score_overview", {}).get("talking_points", []):
+        _talking_point(tp)
+    pdf.ln(4)
+
+    _section("③ 強み", script.get("strengths_section", {}).get("duration", "5分"), (22, 100, 60))
+    _script_block(script.get("strengths_section", {}).get("script", ""))
+    for item in script.get("strengths_section", {}).get("items", []):
+        pdf.set_font(fn, "B", 8)
+        pdf.set_text_color(22, 100, 60)
+        pdf.set_x(15)
+        pdf.cell(inner, 5, f"✓ {item.get('point','')}")
+        pdf.ln(6)
+        pdf.set_font(fn, "", 8)
+        pdf.set_text_color(40, 60, 40)
+        pdf.set_x(15)
+        pdf.multi_cell(inner, 5, item.get("explanation", ""))
+        pdf.ln(3)
+
+    # ─── ページ2: Before/After ───
+    pdf.add_page()
+    _page_header("before_after")
+
+    _section("④ 改善点 Before/After", script.get("before_after_section", {}).get("duration", "10分"), (150, 30, 30))
+    _script_block(script.get("before_after_section", {}).get("script", ""))
+    pdf.ln(2)
+    for item in script.get("before_after_section", {}).get("items", []):
+        _before_after_block(item)
+
+    # ─── ページ3: 優先アクション〜Q&A ───
+    pdf.add_page()
+    _page_header("priority_qa")
+
+    _section("⑤ 最重要アクション", script.get("priority_action", {}).get("duration", "5分"), (146, 64, 14))
+    _script_block(script.get("priority_action", {}).get("script", ""))
+    action = script.get("priority_action", {}).get("action", "")
+    result = script.get("priority_action", {}).get("expected_result", "")
+    if action:
+        pdf.set_fill_color(255, 251, 220)
+        pdf.set_font(fn, "B", 8.5)
+        pdf.set_text_color(100, 60, 0)
+        pdf.multi_cell(inner, 5.5, f"アクション: {action}", fill=True, padding=(4, 6, 4, 6))
+        pdf.ln(2)
+    if result:
+        pdf.set_font(fn, "", 8)
+        pdf.set_text_color(50, 100, 50)
+        pdf.set_x(15)
+        pdf.cell(inner, 5, f"期待される変化: {result}")
+        pdf.ln(8)
+
+    _section("⑥ 次のステップ", script.get("next_steps", {}).get("duration", "3分"), (30, 80, 140))
+    _script_block(script.get("next_steps", {}).get("script", ""))
+    pdf.ln(6)
+
+    _section("⑦ 予想Q&A", f"{len(script.get('qa_list', []))}問", (70, 50, 120))
+    pdf.ln(4)
+    for i, qa in enumerate(script.get("qa_list", []), 1):
+        _qa_block(qa.get("question", ""), qa.get("answer", ""), i)
+
+    return bytes(pdf.output())
