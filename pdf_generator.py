@@ -30,8 +30,8 @@ _LOGO_PATH           = os.path.join(os.path.dirname(__file__), "logo.png")
 _CHARACTER_PATH      = os.path.join(os.path.dirname(__file__), "profile_dark.png")
 _CHARACTER_WORK_PATH = os.path.join(os.path.dirname(__file__), "profile_work.png")
 
-# 詳細診断 相談フォームURL（Googleフォーム作成後にここを差し替える）
-CONSULTATION_FORM_URL = "https://forms.gle/XXXXXXXX"
+# 詳細診断 案内LPのURL（LP公開後にここを差し替える）
+DETAIL_LP_URL = "https://example.com/vct-detail"
 
 # 変換済み一時ファイルキャッシュ
 _converted_cache: dict = {}
@@ -2085,41 +2085,33 @@ body {
   background: #080808; border-top: 3px solid #D4AF37;
   flex-shrink: 0; position: relative;
   display: flex; align-items: flex-end;
-  overflow: hidden; height: 88mm;
+  overflow: hidden; height: 66mm;
 }
 .char-img {
   position: absolute; bottom: 0; left: 0;
-  height: 96mm; width: auto; object-fit: contain; opacity: 0.95;
+  height: 74mm; width: auto; object-fit: contain; opacity: 0.95;
   mix-blend-mode: screen;
   -webkit-mask-image: linear-gradient(to right, transparent 0%, black 42%);
   mask-image: linear-gradient(to right, transparent 0%, black 42%);
 }
 .footer-body {
-  margin-left: 76mm; padding: 12px 22px 12px 0;
+  margin-left: 76mm; padding: 14px 22px 14px 0;
   display: flex; flex-direction: column; justify-content: center;
   flex: 1; align-self: center;
 }
 .logo-img { width: 22px; height: 22px; object-fit: contain; margin-bottom: 5px; }
 .header-logo { width: 38px; height: 38px; object-fit: contain; flex-shrink: 0; margin-top: 2px; }
-.ft-name { font-size: 10pt; font-weight: 700; color: #fff; margin-bottom: 2px; }
-.ft-email { font-size: 6.5pt; color: #D4AF37; margin-bottom: 6px; }
-.ft-div { height: 1px; background: #2a2010; margin-bottom: 6px; }
-.ft-up-title { font-size: 9pt; font-weight: 700; color: #D4AF37; margin-bottom: 4px; }
-.ft-up-text { font-size: 6.5pt; color: #8a7a4a; line-height: 1.65; margin-bottom: 8px; }
-.ft-offer {
-  background: #16130a; border: 1px solid #4a3a18; border-radius: 4px;
-  padding: 8px 10px; margin-bottom: 8px;
-}
-.ft-offer-name { font-size: 8pt; font-weight: 700; color: #fff; margin-bottom: 2px; }
-.ft-offer-detail { font-size: 6.5pt; color: #b8a878; margin-bottom: 4px; }
-.ft-offer-price { font-size: 10pt; font-weight: 700; color: #D4AF37; }
-.ft-hook { font-size: 6.5pt; color: #b8a878; margin-bottom: 8px; }
+.ft-name { font-size: 11pt; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.ft-email { font-size: 7pt; color: #D4AF37; margin-bottom: 8px; }
+.ft-div { height: 1px; background: #2a2010; margin-bottom: 8px; }
+.ft-up-title { font-size: 8pt; font-weight: 700; color: #D4AF37; margin-bottom: 4px; }
+.ft-up-text { font-size: 6.5pt; color: #8a7a4a; line-height: 1.65; margin-bottom: 6px; }
+.ft-offer-price { font-size: 8.5pt; font-weight: 700; color: #D4AF37; margin-bottom: 10px; }
 .ft-cta-btn {
   display: inline-block; background: #D4AF37; color: #080808 !important;
   font-size: 8pt; font-weight: 700; text-decoration: none;
-  padding: 8px 20px; border-radius: 3px; margin-bottom: 3px;
+  padding: 8px 22px; border-radius: 3px; align-self: flex-start;
 }
-.ft-cta-note { font-size: 5.5pt; color: #6a5a30; }
 """
 
     return f"""<!DOCTYPE html>
@@ -2198,15 +2190,9 @@ body {
     <div class="ft-email">inquiry.lifedesignlab@gmail.com</div>
     <div class="ft-div"></div>
     <div class="ft-up-title">さらに詳しく知りたい方へ</div>
-    <div class="ft-up-text">この無料診断では、最も影響の大きい改善ポイントだけをお伝えしています。詳細版では、問い合わせを逃している原因を10ページで分解し、30分のオンライン解説で「何から直すべきか」まで明確にします。</div>
-    <div class="ft-offer">
-      <div class="ft-offer-name">トドクVCT　詳細サイト診断</div>
-      <div class="ft-offer-detail">10ページ詳細レポート＋30分オンライン解説</div>
-      <div class="ft-offer-price">税込99,000円</div>
-    </div>
-    <div class="ft-hook">広告費をかける前に、まずサイトの穴を見つけましょう。</div>
-    <a class="ft-cta-btn" href="{CONSULTATION_FORM_URL}">詳細診断について相談する</a>
-    <div class="ft-cta-note">↑クリックして相談フォームへ（Googleフォーム）</div>
+    <div class="ft-up-text">詳細版では、問い合わせを逃している原因と、優先して直すべき改善ポイントを具体的に確認できます。</div>
+    <div class="ft-offer-price">トドクVCT　詳細サイト診断｜税込99,000円〜</div>
+    <a class="ft-cta-btn" href="{DETAIL_LP_URL}">詳細を見る</a>
   </div>
 </div>
 </body></html>"""
@@ -2514,46 +2500,25 @@ def _generate_summary_pdf_fpdf2(
     pdf.set_font(fn, "B", 7.5)
     pdf.set_text_color(*GOLD)
     pdf.cell(inner, 4.5, "さらに詳しく知りたい方へ")
-    pdf.set_xy(lm, 256)
-    pdf.set_font(fn, "", 5.8)
+    pdf.set_xy(lm, 257)
+    pdf.set_font(fn, "", 6)
     pdf.set_text_color(200, 190, 160)
-    pdf.multi_cell(inner, 3.4,
-        "この無料診断では、最も影響の大きい改善ポイントだけをお伝えしています。詳細版では、問い合わせを"
-        "逃している原因を10ページで分解し、30分のオンライン解説で「何から直すべきか」まで明確にします。")
+    pdf.multi_cell(inner, 3.6,
+        "詳細版では、問い合わせを逃している原因と、優先して直すべき改善ポイントを具体的に確認できます。")
 
-    offer_y = 267
-    pdf.set_fill_color(22, 19, 10)
-    pdf.rect(lm, offer_y, inner, 12, style="F")
-    pdf.set_xy(lm + 3, offer_y + 1.5)
-    pdf.set_font(fn, "B", 7)
-    pdf.set_text_color(*WHITE)
-    pdf.cell(inner - 6, 4, "トドクVCT　詳細サイト診断")
-    pdf.set_xy(lm + 3, offer_y + 5.3)
-    pdf.set_font(fn, "", 5.5)
-    pdf.set_text_color(184, 168, 120)
-    pdf.cell(inner - 6, 3.5, "10ページ詳細レポート＋30分オンライン解説")
-    pdf.set_xy(lm + 3, offer_y + 8.5)
-    pdf.set_font(fn, "B", 8.5)
+    pdf.set_xy(lm, 266)
+    pdf.set_font(fn, "B", 7.5)
     pdf.set_text_color(*GOLD)
-    pdf.cell(inner - 6, 4, "税込99,000円")
+    pdf.cell(inner, 4.5, "トドクVCT　詳細サイト診断｜税込99,000円〜")
 
-    pdf.set_xy(lm, offer_y + 14)
-    pdf.set_font(fn, "", 5.5)
-    pdf.set_text_color(184, 168, 120)
-    pdf.cell(inner, 3.5, "広告費をかける前に、まずサイトの穴を見つけましょう。")
-
-    btn_y = offer_y + 19
+    btn_y = 273
     pdf.set_fill_color(*GOLD)
-    pdf.rect(lm, btn_y, 62, 7, style="F")
+    pdf.rect(lm, btn_y, 42, 7, style="F")
     pdf.set_xy(lm, btn_y + 1.3)
     pdf.set_font(fn, "B", 6.5)
     pdf.set_text_color(*NAVY_DARK)
-    pdf.cell(62, 4.5, "詳細診断について相談する", align="C")
-    pdf.link(lm, btn_y, 62, 7, CONSULTATION_FORM_URL)
-    pdf.set_xy(lm, btn_y + 8)
-    pdf.set_font(fn, "", 5)
-    pdf.set_text_color(106, 90, 48)
-    pdf.cell(inner, 3, "↑クリックして相談フォームへ（Googleフォーム）")
+    pdf.cell(42, 4.5, "詳細を見る", align="C")
+    pdf.link(lm, btn_y, 42, 7, DETAIL_LP_URL)
 
     return bytes(pdf.output())
 
