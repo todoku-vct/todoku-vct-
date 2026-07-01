@@ -1199,6 +1199,57 @@ class _SitePDF(_Base):
         """ページ下部の余白処理（現在は空白のまま残す）。"""
         pass
 
+    def device_comparison_page(self, comparison: dict):
+        """PC/スマホ比較ページ（Proプラン専用・簡易版）。"""
+        self.add_page()
+        lm = self.l_margin
+        self.section_bar("PC / スマホ比較分析（Pro）")
+
+        if comparison.get("score_diff_summary"):
+            self.set_font(self._font, "", 8)
+            self.set_text_color(0, 0, 0)
+            self.set_x(lm)
+            self.multi_cell(180, 5.5, comparison["score_diff_summary"])
+            self.ln(3)
+
+        def _issue_list(title, items, bg, tc):
+            if not items:
+                return
+            self.set_font(self._font, "B", 8.5)
+            self.set_text_color(*tc)
+            self.set_x(lm)
+            self.cell(180, 6, title)
+            self.ln(6)
+            for item in items:
+                self.colored_block(f"・{item}", bg, tc, indent=4)
+
+        _issue_list("PC閲覧時のみの問題", comparison.get("pc_only_issues", []), (235, 244, 255), (30, 60, 120))
+        _issue_list("スマホ閲覧時のみの問題", comparison.get("mobile_only_issues", []), (255, 246, 230), (140, 90, 10))
+        _issue_list("PC・スマホ共通の問題", comparison.get("shared_issues", []), RED_BG, (150, 30, 30))
+
+        pd_map = {"pc": "PC", "mobile": "スマホ", "both": "PC・スマホ両方"}
+        priority_device = pd_map.get(comparison.get("priority_device", ""), "")
+        if priority_device:
+            self.ln(2)
+            self.set_font(self._font, "B", 9)
+            self.set_text_color(*PURPLE)
+            self.set_x(lm)
+            self.cell(180, 6, f"優先して改善すべきデバイス: {priority_device}")
+            self.ln(7)
+            if comparison.get("priority_reason"):
+                self.colored_block(comparison["priority_reason"], AMBER_BG, (110, 80, 10))
+
+        if comparison.get("recommendation"):
+            self.ln(2)
+            self.set_font(self._font, "B", 9)
+            self.set_text_color(0, 0, 0)
+            self.set_x(lm)
+            self.cell(180, 6, "総合改善提案")
+            self.ln(6)
+            self.colored_block(comparison["recommendation"], GREEN_BG, (10, 100, 60))
+
+        self._final_footer()
+
     def next_actions_page(self, site_report: dict):
         """ネクストアクション3選ページ — クライアントが迷わず動けるよう優先行動を大きく提示。"""
         self.add_page()
@@ -1507,6 +1558,7 @@ def generate_site_pdf(
     profession: str,
     device_label: str = "💻 パソコン",
     site_url: str = "",
+    comparison: dict = None,
 ) -> bytes:
     """サイト全体分析レポートのPDF（高級ホテル調デザイン）。"""
     pdf = _SitePDF()
@@ -1929,6 +1981,12 @@ def generate_site_pdf(
         pdf.cell(0, 5, f"…他 {len(scraped_pages) - 40} ページ（合計 {len(scraped_pages)} ページ収集）")
         pdf.ln(5)
     pdf.set_text_color(0, 0, 0)
+
+    # ─────────────────────────────────────────────
+    # Proプラン専用  PC/スマホ比較ページ（任意）
+    # ─────────────────────────────────────────────
+    if comparison:
+        pdf.device_comparison_page(comparison)
 
     # ─────────────────────────────────────────────
     # 最終ページ手前  ネクストアクション3選

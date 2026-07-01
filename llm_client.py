@@ -230,6 +230,19 @@ def generate_ab_report(
     return _extract_json(text)
 
 
+def compare_device_reports(pc_report: dict, mobile_report: dict, profession: str) -> dict:
+    """PC分析・スマホ分析の2レポートを比較し、デバイス差分をAIで要約する。"""
+    prompt_template = _load_prompt("device_comparison_prompt.txt")
+    prompt = _format_prompt(
+        prompt_template,
+        profession=profession,
+        pc_report_json=json.dumps(pc_report, ensure_ascii=False, indent=2),
+        mobile_report_json=json.dumps(mobile_report, ensure_ascii=False, indent=2),
+    )
+    text = _call_claude(SMART_MODEL, prompt, max_tokens=2000)
+    return _extract_json(text)
+
+
 def generate_ai_personas(profession: str, count: int, target_description: str = "") -> list[dict]:
     """AIがビジネス情報からリアルなペルソナをcount人分生成する。"""
     prompt_template = _load_prompt("custom_persona_prompt.txt")

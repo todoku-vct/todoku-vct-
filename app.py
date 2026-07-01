@@ -11,7 +11,7 @@ from web_scraper import scrape_site, extract_emails_from_pages
 from email_sender import send_report as send_email_report, is_configured as email_is_configured
 from db import save_result, load_history, load_detail, load_client_names, delete_record
 from pdf_generator import generate_pdf, generate_ab_pdf, generate_site_pdf, generate_summary_pdf, generate_script_pdf
-from llm_client import generate_consultation_script, generate_ai_personas
+from llm_client import generate_consultation_script, generate_ai_personas, compare_device_reports
 
 st.set_page_config(page_title="トドク VCT", page_icon="🏛", layout="wide")
 
@@ -929,6 +929,12 @@ with tab_site:
         )
         site_device = "mobile" if "スマホ" in device_option else "pc"
 
+    compare_devices = st.toggle(
+        "PC＋スマホ両方で比較分析する（Proプラン相当・分析時間とAPI費用が約2倍になります）",
+        value=False,
+        key="site_compare_devices",
+    )
+
     st.divider()
     use_site_custom = st.toggle("カスタムペルソナ設定を使う", value=False, key="site_custom_toggle")
 
@@ -972,61 +978,85 @@ with tab_site:
 
     site_btn = st.button("🌐 サイト全体を分析する", type="primary", key="site_btn")
 
+    def _run_device_analysis(device: str):
+        """指定デバイスでスクレイピング＋AI分析を実行し、(scraped_pages, site_report) を返す。失敗時はNoneを返す。"""
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        status_text.text(f"{'スマホ' if device == 'mobile' else 'PC'}視点でページを収集中...")
+
+        def _progress(done, total, title):
+            progress_bar.progress(min(done / total, 1.0))
+            status_text.text(f"収集中 ({done}/{total}): {title[:40]}")
+
+        with st.spinner(f"{'スマホ' if device == 'mobile' else 'PC'}視点でサイトを巡回中..."):
+            scraped = scrape_site(site_url, max_pages=site_max_pages, progress_cb=_progress, device=device)
+
+        progress_bar.progress(1.0)
+        status_text.empty()
+
+        failed = []
+        if scraped and "_failed" in scraped[-1]:
+            failed = scraped[-1]["_failed"]
+            scraped = scraped[:-1]
+
+        if not scraped:
+            st.error("ページを取得できませんでした。URLを確認してください。")
+            if failed:
+                with st.expander(f"取得失敗したページ（{len(failed)}件）"):
+                    for f in failed:
+                        st.markdown(f"- `{f['url']}` — **{f['reason']}**")
+            return None
+
+        st.success(f"{len(scraped)}ページを収集しました（{'スマホ' if device == 'mobile' else 'PC'}）")
+        if failed:
+            st.warning(f"取得できなかったページが {len(failed)} 件あります（ボット対策・JS描画等）")
+            with st.expander("取得失敗ページの詳細"):
+                for f in failed:
+                    st.markdown(f"- `{f['url']}` — {f['reason']}")
+
+        with st.expander(f"収集したページ一覧（{'スマホ' if device == 'mobile' else 'PC'}）"):
+            for p in scraped:
+                st.markdown(f"- **{p['title']}** — `{p['url']}`")
+
+        with st.spinner("AIがサイト全体を分析中..."):
+            report = analyze_site(scraped, site_profession, device=device, customer_profile=customer_profile)
+
+        if report.get("error"):
+            st.error(f"AI分析に失敗しました: {report.get('error')}")
+            st.caption(f"詳細: {report.get('raw', '')}")
+            return None
+
+        return scraped, report
+
     if site_btn:
         if not site_url or not site_url.startswith("http"):
             st.error("正しいURLを入力してください（https:// から始まるURL）")
-        else:
-            scraped_pages = []
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-
-            status_text.text("ページを収集中...")
-
-            def _progress(done, total, title):
-                progress_bar.progress(min(done / total, 1.0))
-                status_text.text(f"収集中 ({done}/{total}): {title[:40]}")
-
-            with st.spinner("サイトを巡回中..."):
-                scraped_pages = scrape_site(site_url, max_pages=site_max_pages, progress_cb=_progress, device=site_device)
-
-            progress_bar.progress(1.0)
-            status_text.empty()
-
-            # _failed メタデータを分離
-            failed_pages = []
-            if scraped_pages and "_failed" in scraped_pages[-1]:
-                failed_pages = scraped_pages[-1]["_failed"]
-                scraped_pages = scraped_pages[:-1]
-
-            if not scraped_pages:
-                st.error("ページを取得できませんでした。URLを確認してください。")
-                if failed_pages:
-                    with st.expander(f"取得失敗したページ（{len(failed_pages)}件）"):
-                        for f in failed_pages:
-                            st.markdown(f"- `{f['url']}` — **{f['reason']}**")
+        elif compare_devices:
+            pc_result = _run_device_analysis("pc")
+            mobile_result = _run_device_analysis("mobile")
+            if pc_result and mobile_result:
+                pc_pages, pc_report = pc_result
+                mobile_pages, mobile_report = mobile_result
+                with st.spinner("PC・スマホの結果を比較中..."):
+                    comparison = compare_device_reports(pc_report, mobile_report, site_profession)
+                st.session_state["site_device_label"] = "💻 パソコン"
+                st.session_state["site_report"] = pc_report
+                st.session_state["site_pages"] = pc_pages
+                st.session_state["site_mobile_report"] = mobile_report
+                st.session_state["site_comparison"] = comparison
             else:
-                st.success(f"{len(scraped_pages)}ページを収集しました")
-                if failed_pages:
-                    st.warning(f"取得できなかったページが {len(failed_pages)} 件あります（ボット対策・JS描画等）")
-                    with st.expander("取得失敗ページの詳細"):
-                        for f in failed_pages:
-                            st.markdown(f"- `{f['url']}` — {f['reason']}")
-
-                with st.expander("収集したページ一覧"):
-                    for p in scraped_pages:
-                        st.markdown(f"- **{p['title']}** — `{p['url']}`")
-
-                with st.spinner("AIがサイト全体を分析中..."):
-                    site_report = analyze_site(scraped_pages, site_profession, device=site_device, customer_profile=customer_profile)
-
-                if site_report.get("error"):
-                    st.error(f"AI分析に失敗しました: {site_report.get('error')}")
-                    st.caption(f"詳細: {site_report.get('raw', '')}")
-                    st.stop()
-
+                st.stop()
+        else:
+            result = _run_device_analysis(site_device)
+            if result:
+                scraped_pages, site_report = result
                 st.session_state["site_device_label"] = "📱 スマホ" if site_device == "mobile" else "💻 パソコン"
                 st.session_state["site_report"] = site_report
                 st.session_state["site_pages"] = scraped_pages
+                st.session_state.pop("site_mobile_report", None)
+                st.session_state.pop("site_comparison", None)
+            else:
+                st.stop()
 
     if "site_report" in st.session_state:
         sr = st.session_state["site_report"]
@@ -1107,6 +1137,30 @@ with tab_site:
         if mi:
             st.markdown(_mi_html(mi, margin_top="1rem"), unsafe_allow_html=True)
 
+        # PC/スマホ比較結果（Proプラン）
+        comparison = st.session_state.get("site_comparison")
+        if comparison:
+            st.divider()
+            st.markdown("#### 📱💻 PC / スマホ比較分析（Pro）")
+            st.info(comparison.get("score_diff_summary", ""))
+            col_c1, col_c2, col_c3 = st.columns(3)
+            with col_c1:
+                st.markdown("**PC閲覧時のみの問題**")
+                for item in comparison.get("pc_only_issues", []):
+                    st.markdown(f"- {item}")
+            with col_c2:
+                st.markdown("**スマホ閲覧時のみの問題**")
+                for item in comparison.get("mobile_only_issues", []):
+                    st.markdown(f"- {item}")
+            with col_c3:
+                st.markdown("**PC・スマホ共通の問題**")
+                for item in comparison.get("shared_issues", []):
+                    st.markdown(f"- {item}")
+            if comparison.get("priority_reason"):
+                st.warning(f"優先デバイス: {comparison.get('priority_device','')} — {comparison.get('priority_reason','')}")
+            if comparison.get("recommendation"):
+                st.success(comparison.get("recommendation", ""))
+
         # PDFダウンロード
         st.divider()
         try:
@@ -1116,6 +1170,7 @@ with tab_site:
                 profession=st.session_state.get("site_profession", ""),
                 device_label=device_label,
                 site_url=pages[0]["url"].split("/")[0] + "//" + pages[0]["url"].split("/")[2] if pages else "",
+                comparison=comparison,
             )
             st.session_state["site_pdf_bytes"] = site_pdf_bytes
             fname_site = f"VCT_サイト分析_{st.session_state.get('site_profession','')}_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
