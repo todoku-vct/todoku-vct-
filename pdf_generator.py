@@ -1250,76 +1250,77 @@ class _SitePDF(_Base):
 
         self._final_footer()
 
-    def next_actions_page(self, site_report: dict):
-        """ネクストアクション3選ページ — クライアントが迷わず動けるよう優先行動を大きく提示。"""
+    def roadmap_page(self, site_report: dict):
+        """30・60・90日改善ロードマップページ — 優先アクションの重複を避け、時系列で提示する。"""
         self.add_page()
         lm = self.l_margin
-        self.section_bar("これだけやれば変わる — 優先アクション 3 選")
+        self.section_bar("30・60・90日 改善ロードマップ")
 
-        # アクションデータを収集
-        priority_action = site_report.get("priority_action", "")
+        def _is_dup(a: str, b: str) -> bool:
+            a, b = a.strip(), b.strip()
+            if not a or not b:
+                return False
+            return a in b or b in a or (len(a) >= 8 and a[:8] in b)
+
+        priority_action = site_report.get("priority_action", "").strip()
         weaknesses = site_report.get("weaknesses", [])
-        actions = []
-        if priority_action:
-            actions.append(("最優先アクション", "今週中に実行", priority_action, GREEN_MID))
-        for w in weaknesses:
-            if len(actions) >= 3:
-                break
-            sug = w.get("suggestion", "").strip()
-            point = w.get("point", "").strip()
-            if sug:
-                if len(actions) == 1:
-                    actions.append((point, "今月中に実行", sug, BLUE_MID))
-                else:
-                    actions.append((point, "来月以降に対応", sug, (140, 108, 40)))
-        while len(actions) < 3:
-            actions.append(("継続的な改善", "随時", "スコアの低い項目から順に対策を進めてください。", (140, 120, 80)))
+        missing_pages = site_report.get("missing_pages", [])
+        geo_actions = site_report.get("geo_score", {}).get("actions", [])
 
-        numbers = ["1", "2", "3"]
-        timing_colors = [GREEN_MID, BLUE_MID, (140, 108, 40)]
-        card_h = 50
-        gap = 5
+        # 30日: 最優先改善（信頼毀損の修正）
+        day30 = priority_action or "スコアの低い項目から順に対策を進めてください。"
+
+        # 60日: 優先アクションと重複しない弱点＋不足ページ（信頼構築）
+        day60_items = []
+        for w in weaknesses:
+            sug = w.get("suggestion", "").strip()
+            if sug and not _is_dup(sug, day30) and not _is_dup(w.get("point", ""), day30):
+                day60_items.append(sug)
+            if len(day60_items) >= 2:
+                break
+        for m in missing_pages:
+            if len(day60_items) >= 3:
+                break
+            if not any(_is_dup(m, x) for x in day60_items):
+                day60_items.append(f"「{m}」ページを新設する")
+        if not day60_items:
+            day60_items = ["実績・お客様の声・数字による信頼構築コンテンツを追加する"]
+
+        # 90日: GEO/AIO強化アクション
+        day90_items = list(geo_actions[:3]) if geo_actions else [
+            "FAQ・How toコラム・比較表を追加し、AI検索からの流入を強化する"
+        ]
+
+        cols = [
+            ("30日以内", "信頼毀損の修正", GREEN_MID, [day30]),
+            ("60日以内", "信頼構築の追加", BLUE_MID, day60_items),
+            ("90日以内", "AIO強化", (140, 108, 40), day90_items),
+        ]
 
         self.set_auto_page_break(auto=False)
-        for idx, (title, timing, action, color) in enumerate(actions[:3]):
+        for label, subtitle, color, items in cols:
             y_c = self.get_y()
-            # カード全体背景
+            card_h = max(26, 14 + len(items) * 15)
             self.set_fill_color(248, 244, 234)
             self.rect(lm, y_c, 180, card_h, style="F")
-            # 左カラー帯（20mm）
             self.set_fill_color(*color)
-            self.rect(lm, y_c, 20, card_h, style="F")
-            # 番号
-            self.set_xy(lm, y_c + 13)
-            self.set_font(self._font, "B", 22)
-            self.set_text_color(*WHITE)
-            self.cell(20, 18, numbers[idx], align="C")
-            # タイミングバッジ
-            t_col = timing_colors[idx]
-            self.set_fill_color(*t_col)
-            self.rect(lm + 24, y_c + 4, 28, 7, style="F")
-            self.set_xy(lm + 24, y_c + 4.5)
-            self.set_font(self._font, "B", 7)
-            self.set_text_color(*WHITE)
-            self.cell(28, 6, timing, align="C")
-            # アクションタイトル
-            self.set_xy(lm + 56, y_c + 4)
-            self.set_font(self._font, "B", 7)
+            self.rect(lm, y_c, 6, card_h, style="F")
+            self.set_xy(lm + 12, y_c + 5)
+            self.set_font(self._font, "B", 12)
+            self.set_text_color(*color)
+            self.cell(80, 7, label)
+            self.set_xy(lm + 12, y_c + 12)
+            self.set_font(self._font, "B", 8)
             self.set_text_color(120, 100, 50)
-            self.cell(120, 7, title)
-            # アクション本文（大きめフォント）
-            self.set_xy(lm + 24, y_c + 15)
-            self.set_font(self._font, "B", 10)
+            self.cell(160, 5, subtitle)
+            iy = y_c + 19
+            self.set_font(self._font, "", 8.5)
             self.set_text_color(22, 18, 10)
-            self.multi_cell(152, 6.5, action)
-            self.set_y(y_c + card_h + gap)
-
-        # 締めの一言（バーなし・大きなゴールドテキストのみ）
-        self.set_y(self.get_y() + 10)
-        self.ln(8)
-        self.set_font(self._font, "B", 12)
-        self.set_text_color(*GOLD)
-        self.cell(180, 9, "まず①だけ実行すれば、問い合わせ数は変わり始めます。", align="C")
+            for item in items:
+                self.set_xy(lm + 12, iy)
+                self.multi_cell(160, 5.5, f"・{item}")
+                iy = self.get_y() + 1.5
+            self.set_y(y_c + card_h + 6)
 
         self.set_text_color(0, 0, 0)
         self._final_footer()
@@ -1788,6 +1789,12 @@ def generate_site_pdf(
     pdf._fill_page_bottom()
 
     # ─────────────────────────────────────────────
+    # Proプラン専用  PC/スマホ比較ページ（サマリー直後に配置）
+    # ─────────────────────────────────────────────
+    if comparison:
+        pdf.device_comparison_page(comparison)
+
+    # ─────────────────────────────────────────────
     # p.3  導線問題 + あると効果的なページ
     # ─────────────────────────────────────────────
     pdf.add_page()
@@ -1983,15 +1990,9 @@ def generate_site_pdf(
     pdf.set_text_color(0, 0, 0)
 
     # ─────────────────────────────────────────────
-    # Proプラン専用  PC/スマホ比較ページ（任意）
+    # 最終ページ手前  30・60・90日改善ロードマップ
     # ─────────────────────────────────────────────
-    if comparison:
-        pdf.device_comparison_page(comparison)
-
-    # ─────────────────────────────────────────────
-    # 最終ページ手前  ネクストアクション3選
-    # ─────────────────────────────────────────────
-    pdf.next_actions_page(site_report)
+    pdf.roadmap_page(site_report)
 
     # ─────────────────────────────────────────────
     # 最終ページ  各指標の見方ガイド
