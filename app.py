@@ -282,7 +282,7 @@ st.markdown("""
       <small class="txt-muted" style="font-size:0.88rem;font-weight:400;margin-left:10px;letter-spacing:0;">シンセティックデータ × マーケティング診断</small>
     </b>
     <small class="txt-sub" style="font-size:0.8rem;display:block;margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,0.15);">
-      AIシンセティックデータで顧客反応を予測・サイトをBrandZ視点で診断
+      AIシンセティックデータで顧客反応を予測・サイトをブランド力視点で診断
     </small>
   </div>
   <!-- 右：オフィス写真（テキストなし、装飾のみ） -->

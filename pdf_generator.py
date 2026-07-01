@@ -151,7 +151,7 @@ CHARCOAL2 = (50, 46, 40)      # 少し明るいチャコール
 
 
 def _calc_power_score(site_report: dict) -> tuple:
-    """AI総合パワースコア（100点満点）: DRM(30) + BrandZ(40) + GEO(30)。"""
+    """AI総合パワースコア（100点満点）: DRM(30) + ブランド力(40) + GEO(30)。"""
     mi = site_report.get("marketing_insights", {})
     drm = mi.get("drm_score", "C")
     drm_pts = {"A": 30, "B": 22, "C": 14, "D": 6}.get(drm, 14)
@@ -570,11 +570,11 @@ class _Base(FPDF):
         self.drm_axis(mi)
 
     def brandz_section(self, bz: dict):
-        """BrandZ（Kantar）3軸スコアページ"""
+        """ブランド力3軸スコアページ"""
         if not bz:
             return
         lm = self.l_margin
-        self.section_bar("BrandZ スコア（Kantar ブランドエクイティ分析）")
+        self.section_bar("ブランド力診断（意味性・差別性・顕著性）")
 
         axes = [
             ("意味性  Meaningful", "顧客ニーズへの機能的・感情的適合度", "meaningful", (180, 140, 60)),
@@ -641,7 +641,7 @@ class _Base(FPDF):
             self.set_auto_page_break(auto=True, margin=22)
             self.set_y(y + card_h + 4)
 
-        # BrandZ総評
+        # ブランド力総評
         total_comment = bz.get("brandz_comment", "")
         if total_comment:
             y = self.get_y() + 2
@@ -740,7 +740,7 @@ class _Base(FPDF):
         self.cell(65, 6, f"総合スコア：{score} / 10")
         self.set_font(self._font, "", 7.5)
         self.set_text_color(220, 200, 150)
-        self.cell(107, 6, "AIに推薦・引用されやすさ（Kantar GEO対策基準）")
+        self.cell(107, 6, "AIに推薦・引用されやすさ（AI検索最適化基準）")
         self.set_y(y + 21)
 
         # ── 五角形レーダーチャート（左）＋ステップ詳細（右） ──
@@ -1337,13 +1337,13 @@ class _SitePDF(_Base):
         guides = [
             (
                 "推定問い合わせ率",
-                "AIが演じる10人の仮想顧客が「問い合わせしたい」と思った割合です。",
+                "AIが仮想顧客の視点でサイト全体を評価し、「問い合わせしたい」と感じられた度合いを推定した割合です。",
                 "30%以上=高水準　12〜29%=標準　11%以下=要改善",
                 (22, 120, 60),
             ),
             (
                 "AI 総合パワースコア（100点満点）",
-                "DRM・BrandZ・GEOの3つのスコアを合計した、サイト全体の総合点です。",
+                "DRM・ブランド力・GEOの3つのスコアを合計した、サイト全体の総合点です。",
                 "80点以上=広告を出すタイミング　60〜79点=改善で伸びる　59点以下=要見直し",
                 (180, 140, 20),
             ),
@@ -1354,7 +1354,7 @@ class _SitePDF(_Base):
                 BLUE_MID,
             ),
             (
-                "BrandZ 3軸スコア（各10点）",
+                "ブランド力 3軸スコア（各10点）",
                 "ブランドの強さを「役に立つか」「他と違うか」「思い出されるか」の3点で採点します。",
                 "意味性=悩みに応える　差別性=他社と違う　顕著性=真っ先に思い浮かぶ　3つ揃って強いブランドに",
                 (100, 140, 80),
@@ -1690,7 +1690,7 @@ def generate_site_pdf(
     pdf.rect(lm + 82, y_ps + 4, 0.3, ps_bar_h - 8, style="F")
     # サブスコア（右3列）
     x_sub = lm + 86
-    for sub_l, sub_v, sub_max in [("DRM", drm_pts, 30), ("BrandZ", bz_pts, 40), ("GEO", geo_pts, 30)]:
+    for sub_l, sub_v, sub_max in [("DRM", drm_pts, 30), ("ブランド力", bz_pts, 40), ("GEO", geo_pts, 30)]:
         pdf.set_xy(x_sub, y_ps + 4)
         pdf.set_font(pdf._font, "", 6.5)
         pdf.set_text_color(140, 128, 90)
@@ -1913,7 +1913,7 @@ def generate_site_pdf(
         pdf._fill_page_bottom()
 
     # ─────────────────────────────────────────────
-    # p.6  BrandZ スコア
+    # p.6  ブランド力スコア
     # ─────────────────────────────────────────────
     bz = site_report.get("brandz_score")
     if bz:
@@ -2207,7 +2207,7 @@ body {
     <div class="sc-num" style="color:#D4AF37;">{power_total}</div>
     <div class="sc-unit">/ 100点</div>
     <div class="bar-bg"><div class="bar-fill" style="width:{power_pct}%;background:#D4AF37;"></div></div>
-    <div class="sc-guide">DRM + BrandZ + GEO の総合評価<br>（詳細内訳は詳細版レポートで）</div>
+    <div class="sc-guide">DRM + ブランド力 + GEO の総合評価<br>（詳細内訳は詳細版レポートで）</div>
   </div>
   <div class="sc" style="border-top-color:{rate_color};">
     <div class="sc-lbl" style="color:{rate_color};">推定問い合わせ率</div>
@@ -2246,7 +2246,7 @@ body {
   </div>
   <div class="guide">
     <div class="guide-title">このレポートの見方</div>
-    <div class="gr"><span class="gr-key">- AI総合パワースコア</span><span class="gr-val">DRM・BrandZ・GEO 3軸の総合点（100点満点）。詳細な内訳は詳細版レポートで確認できます。</span></div>
+    <div class="gr"><span class="gr-key">- AI総合パワースコア</span><span class="gr-val">DRM・ブランド力・GEO 3軸の総合点（100点満点）。詳細な内訳は詳細版レポートで確認できます。</span></div>
     <div class="gr"><span class="gr-key">- 推定問い合わせ率</span><span class="gr-val">付想顧客が回遊後に問い合わせたいと感じた割合。30%以上=高水準。</span></div>
     <div class="gr"><span class="gr-key">- DRM（A～D）</span><span class="gr-val">集客→教育→販売の導線評価。Cは改善なく広告をかけると費用が無駄になるサイン。</span></div>
   </div>
@@ -2415,7 +2415,7 @@ def _generate_summary_pdf_fpdf2(
     _bg = (24, 20, 10)
 
     for idx, (px, top_c, label, big_val, sub1, sub2) in enumerate([
-        (lm,           GOLD,       "AI 総合パワースコア", str(power_total), "/ 100点",  "DRM+BrandZ+GEO（詳細は有料版で）"),
+        (lm,           GOLD,       "AI 総合パワースコア", str(power_total), "/ 100点",  "DRM+ブランド力+GEO（詳細は有料版で）"),
         (lm+pw+gap,    rate_color, "推定問い合わせ率",   rate,             rate_badge, "30%以上=高水準 12〜29%=標準"),
         (lm+pw*2+gap*2,drm_color, "マーケティング DRM", drm,              "",         {"A":"広告効果大","B":"伸びしろあり","C":"改善が先決","D":"再構築必要"}.get(drm,"")),
     ]):
@@ -2538,7 +2538,7 @@ def _generate_summary_pdf_fpdf2(
     pdf.set_text_color(80, 65, 25)
     pdf.cell(inner - 6, 5, "このレポートの見方")
     for j, (lbl, dsc) in enumerate([
-        ("AI総合パワースコア", "DRM・BrandZ・GEO 3軸の総合点（100点満点）。詳細は詳細版レポートで。"),
+        ("AI総合パワースコア", "DRM・ブランド力・GEO 3軸の総合点（100点満点）。詳細は詳細版レポートで。"),
         ("推定問い合わせ率",   "仮想顧客が回遊後に問い合わせたいと感じた割合。30%以上=高水準。"),
         ("DRM（A〜D）",       "集客→教育→販売の導線評価。Cは改善なく広告をかけると費用が無駄に。"),
     ]):
