@@ -30,8 +30,8 @@ _LOGO_PATH           = os.path.join(os.path.dirname(__file__), "logo.png")
 _CHARACTER_PATH      = os.path.join(os.path.dirname(__file__), "profile_dark.png")
 _CHARACTER_WORK_PATH = os.path.join(os.path.dirname(__file__), "profile_work.png")
 
-# 詳細診断 案内LPのURL（LP公開後にここを差し替える）
-DETAIL_LP_URL = "https://example.com/vct-detail"
+# 詳細診断 案内LPのURL
+DETAIL_LP_URL = "https://glistening-zuccutto-545837.netlify.app/vct-detail.html"
 
 # 変換済み一時ファイルキャッシュ
 _converted_cache: dict = {}
