@@ -2113,14 +2113,16 @@ body {
 .ft-name { font-size: 11pt; font-weight: 700; color: #fff; margin-bottom: 2px; }
 .ft-email { font-size: 7pt; color: #D4AF37; margin-bottom: 8px; }
 .ft-div { height: 1px; background: #2a2010; margin-bottom: 8px; }
-.ft-up-title { font-size: 8pt; font-weight: 700; color: #D4AF37; margin-bottom: 4px; }
-.ft-up-text { font-size: 7.5pt; font-weight: 700; color: #d8cba0; line-height: 1.7; margin-bottom: 6px; }
-.ft-offer-price { font-size: 8.5pt; font-weight: 700; color: #D4AF37; margin-bottom: 10px; }
+.ft-up-title { font-size: 8pt; font-weight: 700; color: #D4AF37; margin-bottom: 5px; }
+.ft-up-lead { font-size: 7pt; font-weight: 600; color: #c9bd94; line-height: 1.6; margin-bottom: 4px; }
+.ft-up-text { font-size: 7pt; font-weight: 600; color: #c9bd94; line-height: 1.6; margin-bottom: 8px; }
+.ft-offer-price { font-size: 8pt; font-weight: 700; color: #D4AF37; margin-bottom: 8px; }
 .ft-cta-btn {
   display: inline-block; background: #D4AF37; color: #080808 !important;
-  font-size: 8pt; font-weight: 700; text-decoration: none;
-  padding: 8px 22px; border-radius: 3px; align-self: flex-start;
+  font-size: 7.5pt; font-weight: 700; text-decoration: none;
+  padding: 6px 18px; border-radius: 3px; align-self: flex-start;
 }
+.ft-cta-note { font-size: 5.5pt; color: #6a5a30; margin-top: 4px; }
 """
 
     return f"""<!DOCTYPE html>
@@ -2199,9 +2201,11 @@ body {
     <div class="ft-email">inquiry.lifedesignlab@gmail.com</div>
     <div class="ft-div"></div>
     <div class="ft-up-title">さらに詳しく知りたい方へ</div>
-    <div class="ft-up-text">詳細版では、問い合わせを逃している原因と、優先して直すべき改善ポイントを具体的に確認できます。</div>
+    <div class="ft-up-lead">今後は「検索で上位に出る」だけでなく、AIに"おすすめされる"サイト設計が必要です。</div>
+    <div class="ft-up-text">詳細版では、AIに選ばれにくい原因と、問い合わせにつながる改善ポイントを具体的に確認できます。</div>
     <div class="ft-offer-price">トドクVCT　詳細サイト診断｜税込99,000円〜</div>
     <a class="ft-cta-btn" href="{DETAIL_LP_URL}">詳細を見る</a>
+    <div class="ft-cta-note">※クリックすると詳細案内ページが開きます。</div>
   </div>
 </div>
 </body></html>"""
@@ -2511,24 +2515,33 @@ def _generate_summary_pdf_fpdf2(
     pdf.set_text_color(*GOLD)
     pdf.cell(inner, 4.5, "さらに詳しく知りたい方へ")
     pdf.set_xy(lm, 257)
-    pdf.set_font(fn, "B", 7)
-    pdf.set_text_color(216, 203, 160)
-    pdf.multi_cell(inner, 4.0,
-        "詳細版では、問い合わせを逃している原因と、優先して直すべき改善ポイントを具体的に確認できます。")
+    pdf.set_font(fn, "", 6.5)
+    pdf.set_text_color(201, 189, 148)
+    pdf.multi_cell(inner, 3.6,
+        "今後は「検索で上位に出る」だけでなく、AIに“おすすめされる”サイト設計が必要です。")
+    pdf.set_xy(lm, 263.5)
+    pdf.set_font(fn, "", 6.5)
+    pdf.set_text_color(201, 189, 148)
+    pdf.multi_cell(inner, 3.6,
+        "詳細版では、AIに選ばれにくい原因と、問い合わせにつながる改善ポイントを具体的に確認できます。")
 
-    pdf.set_xy(lm, 266)
+    pdf.set_xy(lm, 271)
     pdf.set_font(fn, "B", 7.5)
     pdf.set_text_color(*GOLD)
     pdf.cell(inner, 4.5, "トドクVCT　詳細サイト診断｜税込99,000円〜")
 
-    btn_y = 273
+    btn_y = 277.5
     pdf.set_fill_color(*GOLD)
-    pdf.rect(lm, btn_y, 42, 7, style="F")
-    pdf.set_xy(lm, btn_y + 1.3)
+    pdf.rect(lm, btn_y, 38, 6, style="F")
+    pdf.set_xy(lm, btn_y + 1)
     pdf.set_font(fn, "B", 6.5)
     pdf.set_text_color(*NAVY_DARK)
-    pdf.cell(42, 4.5, "詳細を見る", align="C")
-    pdf.link(lm, btn_y, 42, 7, DETAIL_LP_URL)
+    pdf.cell(38, 4, "詳細を見る", align="C")
+    pdf.link(lm, btn_y, 38, 6, DETAIL_LP_URL)
+    pdf.set_xy(lm + 41, btn_y + 1.3)
+    pdf.set_font(fn, "", 5)
+    pdf.set_text_color(106, 90, 48)
+    pdf.cell(inner - 41, 3.5, "※クリックすると詳細案内ページが開きます。")
 
     return bytes(pdf.output())
 
