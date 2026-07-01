@@ -1367,7 +1367,7 @@ class _SitePDF(_Base):
         self._final_footer()
         self.set_auto_page_break(auto=True, margin=22)
 
-    def cover_page(self, site_url: str, profession: str, page_count: int, power_score: int = 0):
+    def cover_page(self, site_url: str, profession: str, page_count: int, power_score: int = 0, company_name: str = ""):
         self.set_auto_page_break(auto=False)
         self.add_page()
 
@@ -1399,7 +1399,14 @@ class _SitePDF(_Base):
         self.cell(210, 11, "サイト全体分析レポート", align="C")
         self.set_fill_color(*GOLD)
         self.rect(105 - 26, _ty + 14, 52, 0.2, style="F")  # 下区切り線
-        self.set_xy(0, _ty + 20)
+        _tag_y = _ty + 20
+        if company_name.strip():
+            self.set_xy(0, _tag_y)
+            self.set_font(self._font, "B", 10)
+            self.set_text_color(*GOLD)
+            self.cell(210, 6, f"{company_name.strip()}　様", align="C")
+            _tag_y += 8
+        self.set_xy(0, _tag_y)
         self.set_font(self._font, "", 7)
         self.set_text_color(155, 143, 96)
         self.cell(210, 4, "仮想顧客テスト  ·  Powered by Claude AI", align="C")
@@ -1506,7 +1513,8 @@ def generate_site_pdf(
     lm = pdf.l_margin
 
     total_ps_cover, _, _, _ = _calc_power_score(site_report)
-    pdf.cover_page(site_url, profession, len(scraped_pages), power_score=total_ps_cover)
+    company_name = (site_report.get("company_name") or "").strip()
+    pdf.cover_page(site_url, profession, len(scraped_pages), power_score=total_ps_cover, company_name=company_name)
     pdf.set_auto_page_break(auto=True, margin=22)  # カバー後に再有効化
     pdf.add_page()
 
@@ -2012,7 +2020,8 @@ def _build_summary_html(
     priority   = site_report.get("priority_action", "").strip()
     priority   = (priority[:230]   + "\u2026") if len(priority) > 230 else priority
 
-    title    = f"{profession}\u3000\u7121\u6599\u30b5\u30a4\u30c8\u8a3a\u65ad\u30ec\u30dd\u30fc\u30c8" if profession else "\u7121\u6599\u30b5\u30a4\u30c8\u8a3a\u65ad\u30ec\u30dd\u30fc\u30c8"
+    company_name = (site_report.get("company_name") or "").strip()
+    title = f"{company_name}\u3000\u69d8" if company_name else (f"{profession}\u3000\u7121\u6599\u30b5\u30a4\u30c8\u8a3a\u65ad\u30ec\u30dd\u30fc\u30c8" if profession else "\u7121\u6599\u30b5\u30a4\u30c8\u8a3a\u65ad\u30ec\u30dd\u30fc\u30c8")
     url_disp = (site_url[:80] + "\u2026") if len(site_url) > 80 else site_url
 
     css = """
@@ -2105,7 +2114,7 @@ body {
 .ft-email { font-size: 7pt; color: #D4AF37; margin-bottom: 8px; }
 .ft-div { height: 1px; background: #2a2010; margin-bottom: 8px; }
 .ft-up-title { font-size: 8pt; font-weight: 700; color: #D4AF37; margin-bottom: 4px; }
-.ft-up-text { font-size: 6.5pt; color: #8a7a4a; line-height: 1.65; margin-bottom: 6px; }
+.ft-up-text { font-size: 7.5pt; font-weight: 700; color: #d8cba0; line-height: 1.7; margin-bottom: 6px; }
 .ft-offer-price { font-size: 8.5pt; font-weight: 700; color: #D4AF37; margin-bottom: 10px; }
 .ft-cta-btn {
   display: inline-block; background: #D4AF37; color: #080808 !important;
@@ -2307,7 +2316,8 @@ def _generate_summary_pdf_fpdf2(
     pdf.set_xy(lm, 14)
     pdf.set_font(fn, "B", 14)
     pdf.set_text_color(*WHITE)
-    title_text = f"{profession}  無料サイト診断レポート" if profession else "無料サイト診断レポート"
+    company_name = (site_report.get("company_name") or "").strip()
+    title_text = f"{company_name}  様" if company_name else (f"{profession}  無料サイト診断レポート" if profession else "無料サイト診断レポート")
     pdf.cell(inner, 8, title_text)
     pdf.set_xy(lm, 24)
     pdf.set_font(fn, "", 6)
@@ -2501,9 +2511,9 @@ def _generate_summary_pdf_fpdf2(
     pdf.set_text_color(*GOLD)
     pdf.cell(inner, 4.5, "さらに詳しく知りたい方へ")
     pdf.set_xy(lm, 257)
-    pdf.set_font(fn, "", 6)
-    pdf.set_text_color(200, 190, 160)
-    pdf.multi_cell(inner, 3.6,
+    pdf.set_font(fn, "B", 7)
+    pdf.set_text_color(216, 203, 160)
+    pdf.multi_cell(inner, 4.0,
         "詳細版では、問い合わせを逃している原因と、優先して直すべき改善ポイントを具体的に確認できます。")
 
     pdf.set_xy(lm, 266)
