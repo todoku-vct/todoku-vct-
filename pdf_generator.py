@@ -2729,8 +2729,11 @@ def generate_script_pdf(script: dict, site_url: str, profession: str) -> bytes:
     nxt = script.get("next_steps", {})
     _label(f"⑧ 次のステップ　{nxt.get('duration','2分')}")
     _script(nxt.get("script", ""))
-    if nxt.get("kindle_mention"):
-        _normal(f"（次の提案として）{nxt['kindle_mention']}", color=RGBColor(0x6B, 0x46, 0x1D))
+    kindle_mention = nxt.get("kindle_mention") or (
+        "サイト改善だけでなく、ご自身の権威性を高める手段として、"
+        "もしご興味があればKindle出版というご提案もできます。"
+    )
+    _normal(f"（次の提案として）{kindle_mention}", color=RGBColor(0x6B, 0x46, 0x1D))
     doc.add_paragraph()
 
     # ── ⑨ 予想Q&A ──
