@@ -36,22 +36,27 @@ DETAIL_LP_URL = "https://glistening-zuccutto-545837.netlify.app/vct-detail.html"
 # 変換済み一時ファイルキャッシュ
 _converted_cache: dict = {}
 
-def _make_cover_char(src_path: str, bg=(8, 8, 8), fade_frac: float = 0.45) -> str:
+def _make_cover_char(src_path: str, bg=(8, 8, 8), fade_frac: float = 0.22, brightness: float = 1.15) -> str:
     """表紙用キャラクター: 左・上方向を多方向グラデーションで背景に自然に溶け込ませる。"""
-    key = ("cover_char_v3", src_path, bg, fade_frac)
+    key = ("cover_char_v4", src_path, bg, fade_frac, brightness)
     if key in _converted_cache and os.path.exists(_converted_cache[key]):
         return _converted_cache[key]
-    from PIL import ImageDraw
+    from PIL import ImageDraw, ImageEnhance
     img = _PILImage.open(src_path).convert("RGBA")
+    if brightness != 1.0:
+        rgb = img.convert("RGB")
+        rgb = ImageEnhance.Brightness(rgb).enhance(brightness)
+        img = rgb.convert("RGBA")
+        img.putalpha(255)
     w, h = img.size
     # アルファマスク（255=完全不透明、0=完全透明）
     mask = _PILImage.new("L", (w, h), 255)
 
-    # 左フェード（45%幅・なだらかな曲線）
+    # 左フェード（なだらかな曲線・手のひらなど見せたい範囲は残す）
     fade_w = int(w * fade_frac)
     for x in range(fade_w):
         t = x / fade_w
-        alpha = int(255 * (t ** 1.6))
+        alpha = int(255 * (t ** 1.3))
         for y in range(h):
             cur = mask.getpixel((x, y))
             mask.putpixel((x, y), min(cur, alpha))
@@ -815,31 +820,31 @@ class _Base(FPDF):
             self.set_fill_color(248, 244, 234)
             self.rect(lm, y, 180, 0.6, style="F")
             self.set_y(y + 3)
-            # ✅ 揃っている項目
+            # 揃っている項目
             if ok_items:
                 self.set_x(lm + 4)
                 self.set_font(self._font, "B", 7.5)
                 self.set_text_color(22, 80, 40)
-                self.cell(176, 4.5, f"✅ 揃っている項目（{len(ok_items)}）")
+                self.cell(176, 4.5, f"○ 揃っている項目（{len(ok_items)}）")
                 self.ln(5)
                 for ok in ok_items[:6]:
                     self.set_x(lm + 8)
                     self.set_font(self._font, "", 8)
                     self.set_text_color(22, 100, 50)
-                    self.multi_cell(172, 4.5, f"✅ {ok}")
+                    self.multi_cell(172, 4.5, f"・{ok}")
             self.ln(2)
-            # ❌ 不足している項目
+            # 不足している項目
             if ng_items:
                 self.set_x(lm + 4)
                 self.set_font(self._font, "B", 7.5)
                 self.set_text_color(140, 20, 20)
-                self.cell(176, 4.5, f"❌ 不足している項目（{len(ng_items)}）")
+                self.cell(176, 4.5, f"× 不足している項目（{len(ng_items)}）")
                 self.ln(5)
                 for ng in ng_items[:6]:
                     self.set_x(lm + 8)
                     self.set_font(self._font, "", 8)
                     self.set_text_color(160, 30, 30)
-                    self.multi_cell(172, 4.5, f"❌ {ng}")
+                    self.multi_cell(172, 4.5, f"・{ng}")
             self.ln(3)
 
         # ── 原因と改善アクション ──
@@ -1372,7 +1377,7 @@ class _SitePDF(_Base):
                 (80, 120, 180),
             ),
             (
-                "11項目チェックリスト（AIが求める情報）",
+                "12項目チェックリスト（AIが求める情報）",
                 "AIが「このサイトは信頼できる」と判断するために必要な情報が揃っているかのチェックです。",
                 "①誰向け ②悩み ③他社との差 ④料金 ⑤対応エリア ⑥利用の流れ ⑦Q&A ⑧向く人 ⑨向かない人 ⑩口コミ ⑪実績 ⑫専門資格",
                 (80, 120, 180),
@@ -1528,7 +1533,7 @@ class _SitePDF(_Base):
         # ━━ ③ キャラクター（URLカードの上・金枠の下） ━━
         if os.path.exists(_CHARACTER_PATH):
             try:
-                char_path = _make_cover_char(_CHARACTER_PATH, bg=(8, 8, 8), fade_frac=0.45)
+                char_path = _make_cover_char(_CHARACTER_PATH, bg=(8, 8, 8), fade_frac=0.22, brightness=1.15)
                 img = _PILImage.open(char_path)
                 char_h = 148  # ホワイトボードが見える高さ（小さめで下端が切れない）
                 char_w = round(char_h * img.width / img.height, 1)
@@ -2195,7 +2200,7 @@ body {
     <div class="header-sub">LIFE DESIGN LAB  —  トドク VCT  無料サイト診断レポート</div>
     <div class="header-title">{_esc(title)}</div>
     <div class="header-meta">{_esc(url_disp)}  |  {_esc(_device_clean)}  |  {now}</div>
-    <div class="header-disc">本レポートはAIシンセティックデータ（付想顧客）による推定です。実際の数値は異なる場合があります。</div>
+    <div class="header-disc">※VCTとは「Virtual Customer Test（AI仮想顧客テスト）」の略称です。本レポートはAIが仮想の顧客になりきって行った推定分析であり、実際の数値とは異なる場合があります。</div>
   </div>
   {header_logo_html}
 </div>
@@ -2214,7 +2219,7 @@ body {
     <div class="sc-num" style="color:{rate_color};">{_esc(rate)}</div>
     <span class="badge" style="background:{rate_color};">{rate_badge}</span>
     <div class="bar-bg"><div class="bar-fill" style="width:{min(rate_num,100)}%;background:{rate_color};"></div></div>
-    <div class="sc-guide">30%以上=高水準<br>12～29%=標準　11%以下=要改善<br>付想顧客が回遊後に<br>問い合わせたいと感じた割合</div>
+    <div class="sc-guide">30%以上=高水準<br>12～29%=標準　11%以下=要改善<br>仮想顧客が回遊後に<br>問い合わせたいと感じた割合</div>
   </div>
   <div class="sc" style="border-top-color:{drm_color};">
     <div class="sc-lbl" style="color:{drm_color};">マーケティング評価 DRM</div>
@@ -2227,7 +2232,7 @@ body {
 
 <div class="content">
   <div class="impression">
-    <div class="sec-lbl">第一印象  —  AIが付想顧客として見たサイト全体の総評</div>
+    <div class="sec-lbl">第一印象  —  AIが仮想顧客として見たサイト全体の総評</div>
     <div class="imp-text">{_esc(impression)}</div>
   </div>
   <div class="sw-row">
@@ -2247,8 +2252,10 @@ body {
   <div class="guide">
     <div class="guide-title">このレポートの見方</div>
     <div class="gr"><span class="gr-key">- AI総合パワースコア</span><span class="gr-val">DRM・ブランド力・GEO 3軸の総合点（100点満点）。詳細な内訳は詳細版レポートで確認できます。</span></div>
-    <div class="gr"><span class="gr-key">- 推定問い合わせ率</span><span class="gr-val">付想顧客が回遊後に問い合わせたいと感じた割合。30%以上=高水準。</span></div>
+    <div class="gr"><span class="gr-key">- 推定問い合わせ率</span><span class="gr-val">仮想顧客が回遊後に問い合わせたいと感じた割合。30%以上=高水準。</span></div>
     <div class="gr"><span class="gr-key">- DRM（A～D）</span><span class="gr-val">集客→教育→販売の導線評価。Cは改善なく広告をかけると費用が無駄になるサイン。</span></div>
+    <div class="gr"><span class="gr-key">- ブランド力</span><span class="gr-val">「誰に・何が違って・なぜ選ばれるか」が伝わっているかの評価。3つの視点で採点します。</span></div>
+    <div class="gr"><span class="gr-key">- GEO</span><span class="gr-val">ChatGPTなどのAIに「おすすめの1つ」として紹介されやすいかどうかの評価です。</span></div>
   </div>
 </div>
 
@@ -2532,25 +2539,27 @@ def _generate_summary_pdf_fpdf2(
 
     # 用語解説
     pdf.set_fill_color(228, 224, 212)
-    pdf.rect(lm, 210, inner, 19, style="F")
-    pdf.set_xy(lm + 3, 212)
+    pdf.rect(lm, 208, inner, 24, style="F")
+    pdf.set_xy(lm + 3, 209.5)
     pdf.set_font(fn, "B", 7)
     pdf.set_text_color(80, 65, 25)
-    pdf.cell(inner - 6, 5, "このレポートの見方")
+    pdf.cell(inner - 6, 4.5, "このレポートの見方")
     for j, (lbl, dsc) in enumerate([
         ("AI総合パワースコア", "DRM・ブランド力・GEO 3軸の総合点（100点満点）。詳細は詳細版レポートで。"),
         ("推定問い合わせ率",   "仮想顧客が回遊後に問い合わせたいと感じた割合。30%以上=高水準。"),
         ("DRM（A〜D）",       "集客→教育→販売の導線評価。Cは改善なく広告をかけると費用が無駄に。"),
+        ("ブランド力",        "「誰に・何が違って・なぜ選ばれるか」が伝わっているかの評価。"),
+        ("GEO",               "ChatGPT等のAIに「おすすめの1つ」として紹介されやすいかの評価。"),
     ]):
-        gy = 218 + j * 4
+        gy = 214 + j * 3.4
         pdf.set_xy(lm + 3, gy)
-        pdf.set_font(fn, "B", 5.5)
+        pdf.set_font(fn, "B", 5.3)
         pdf.set_text_color(80, 65, 25)
-        pdf.cell(36, 3.5, f"- {lbl}")
-        pdf.set_xy(lm + 39, gy)
-        pdf.set_font(fn, "", 5.5)
+        pdf.cell(30, 3.2, f"- {lbl}")
+        pdf.set_xy(lm + 33, gy)
+        pdf.set_font(fn, "", 5.3)
         pdf.set_text_color(60, 48, 18)
-        pdf.cell(inner - 41, 3.5, dsc)
+        pdf.cell(inner - 35, 3.2, dsc)
 
     # フッター
     pdf.set_fill_color(*NAVY_DARK)
