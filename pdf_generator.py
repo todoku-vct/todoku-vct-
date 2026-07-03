@@ -192,6 +192,25 @@ def _find_linux_font(names: list) -> str:
     return ""
 
 
+def _extract_ttc_font(ttc_path: str, font_index: int = 0) -> str:
+    """TTC（複数フォント同梱）から単一フォントを抽出し、単体のフォントファイルとして保存する。
+    fpdf2がTTCを直接埋め込むと壊れたフォントデータになる場合があるための対策。"""
+    key = ("ttc_extract", ttc_path, font_index)
+    if key in _converted_cache and os.path.exists(_converted_cache[key]):
+        return _converted_cache[key]
+    try:
+        from fontTools.ttLib import TTFont
+        font = TTFont(ttc_path, fontNumber=font_index)
+        tmp = tempfile.NamedTemporaryFile(suffix=".otf", delete=False)
+        font.save(tmp.name)
+        font.close()
+        _converted_cache[key] = tmp.name
+        return tmp.name
+    except Exception:
+        # 抽出に失敗した場合は元のTTCをそのまま返す（fpdf2側のフォールバックに委ねる）
+        return ttc_path
+
+
 def _resolve_font():
     """游明朝 → 游ゴシック → メイリオ → Noto CJK（Linux）の優先順でフォントを解決。"""
     if os.path.exists(_FONT_MINCHO_R) and os.path.exists(_FONT_MINCHO_B):
@@ -206,6 +225,10 @@ def _resolve_font():
     r = _find_linux_font(_LINUX_FONT_R_NAMES)
     b = _find_linux_font(_LINUX_FONT_B_NAMES)
     if r:
+        if r.lower().endswith(".ttc"):
+            r = _extract_ttc_font(r, 0)
+        if b and b.lower().endswith(".ttc"):
+            b = _extract_ttc_font(b, 0)
         return r, (b if b else r)
     return None, None
 
