@@ -912,6 +912,9 @@ def generate_pdf(
     main_rate: str, test_mode: str = "LP",
 ) -> bytes:
     pdf = _Base()
+    pdf.set_title(f"{profession}　仮想顧客テストレポート" if profession else "仮想顧客テストレポート")
+    pdf.set_author("LIFE DESIGN LAB")
+    pdf.set_creator("Todoku VCT")
     pdf.add_page()
     lm = pdf.l_margin
 
@@ -1007,6 +1010,9 @@ def generate_ab_pdf(
     text_a: str, text_b: str, mode: str, profession: str, persona_count: int,
 ) -> bytes:
     pdf = _Base()
+    pdf.set_title(f"{profession}　A/Bテストレポート" if profession else "A/Bテストレポート")
+    pdf.set_author("LIFE DESIGN LAB")
+    pdf.set_creator("Todoku VCT")
     pdf.add_page()
     lm = pdf.l_margin
 
@@ -1568,6 +1574,10 @@ def generate_site_pdf(
 ) -> bytes:
     """サイト全体分析レポートのPDF（高級ホテル調デザイン）。"""
     pdf = _SitePDF()
+    pdf.set_title(f"{profession}　サイト全体分析レポート" if profession else "サイト全体分析レポート")
+    pdf.set_author("LIFE DESIGN LAB")
+    pdf.set_creator("Todoku VCT")
+    pdf.set_subject("Todoku VCT Site Analysis Report")
     lm = pdf.l_margin
 
     total_ps_cover, _, _, _ = _calc_power_score(site_report)
@@ -2355,6 +2365,9 @@ def _generate_summary_pdf_fpdf2(
     """fpdf2によるサマリーPDFフォールバック（Streamlit Cloud用）。"""
     font_r, font_b = _resolve_font()
     pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.set_title(f"{profession}　無料サイト診断レポート" if profession else "無料サイト診断レポート")
+    pdf.set_author("LIFE DESIGN LAB")
+    pdf.set_creator("Todoku VCT")
     pdf.add_page()
     pdf.set_auto_page_break(auto=False)
 
