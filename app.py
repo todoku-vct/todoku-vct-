@@ -1173,7 +1173,8 @@ with tab_site:
                 comparison=comparison,
             )
             st.session_state["site_pdf_bytes"] = site_pdf_bytes
-            fname_site = f"VCT_サイト分析_{st.session_state.get('site_profession','')}_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+            _now_str = __import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')
+            fname_site = f"VCT_サイト分析_{st.session_state.get('site_profession','')}_{_now_str}.pdf"
             st.download_button(
                 "📄 サイト分析レポートをPDFでダウンロード",
                 data=site_pdf_bytes,
@@ -1182,6 +1183,18 @@ with tab_site:
                 use_container_width=True,
                 type="primary",
             )
+            st.caption("コンビニのネットプリントでPDFの登録に失敗する場合は、下のJPEG（ZIP）版をお使いください。")
+            if st.button("🖼️ JPEG画像（ZIP）に変換する", use_container_width=True, key="btn_site_jpeg"):
+                with st.spinner("JPEGに変換中..."):
+                    from pdf_generator import pdf_to_jpeg_zip
+                    zip_bytes = pdf_to_jpeg_zip(site_pdf_bytes, base_name="VCTレポート")
+                st.download_button(
+                    "📦 JPEG（ZIP）をダウンロード",
+                    data=zip_bytes,
+                    file_name=f"VCT_サイト分析_{st.session_state.get('site_profession','')}_{_now_str}.zip",
+                    mime="application/zip",
+                    use_container_width=True,
+                )
         except Exception as e:
             st.warning(f"PDF生成に失敗しました: {e}")
 
@@ -1246,6 +1259,19 @@ with tab_site:
                     mime="application/pdf",
                     use_container_width=True,
                 )
+            with col_dl2:
+                if st.button("🖼️ JPEGに変換する", use_container_width=True, key="btn_summary_jpeg"):
+                    with st.spinner("JPEGに変換中..."):
+                        from pdf_generator import pdf_to_jpeg_pages
+                        _jpeg_pages = pdf_to_jpeg_pages(summary_pdf_bytes)
+                    st.download_button(
+                        "🖼️ JPEGをダウンロード",
+                        data=_jpeg_pages[0],
+                        file_name=f"VCT_無料診断_{st.session_state.get('site_profession','')}_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')}.jpg",
+                        mime="image/jpeg",
+                        use_container_width=True,
+                    )
+            st.caption("コンビニのネットプリントでPDFの登録に失敗する場合は、JPEG版をお使いください。")
         except Exception as e:
             st.warning(f"簡略版PDF生成に失敗しました: {e}")
 

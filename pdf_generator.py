@@ -1,6 +1,7 @@
 ﻿from fpdf import FPDF
 from datetime import datetime
 import base64
+import io
 import math
 import os
 import tempfile
@@ -2837,4 +2838,30 @@ def generate_script_pdf(script: dict, site_url: str, profession: str) -> bytes:
 
     buf = io.BytesIO()
     doc.save(buf)
+    return buf.getvalue()
+
+
+def pdf_to_jpeg_pages(pdf_bytes: bytes, dpi: int = 200) -> list:
+    """PDFの各ページをJPEG画像バイト列のリストに変換する（コンビニ印刷のPDF非対応対策）。"""
+    import fitz
+    images = []
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    try:
+        for page in doc:
+            pix = page.get_pixmap(dpi=dpi)
+            images.append(pix.tobytes("jpg"))
+    finally:
+        doc.close()
+    return images
+
+
+def pdf_to_jpeg_zip(pdf_bytes: bytes, base_name: str = "page", dpi: int = 200) -> bytes:
+    """PDFの全ページをJPEGに変換し、ZIPファイルのバイト列として返す。
+    解凍ツールによる文字化けを避けるため、ZIP内のファイル名は英数字のみにする。"""
+    import zipfile
+    images = pdf_to_jpeg_pages(pdf_bytes, dpi=dpi)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for i, img_bytes in enumerate(images, 1):
+            zf.writestr(f"page_{i:02d}.jpg", img_bytes)
     return buf.getvalue()
