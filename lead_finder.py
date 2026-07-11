@@ -1,4 +1,4 @@
-"""Google Places API を使った、DM送付先リストアップ用のリード収集モジュール。"""
+"""Google Places API (New) を使った、DM送付先リストアップ用のリード収集モジュール。"""
 import time
 from urllib.parse import urlparse
 
@@ -6,8 +6,8 @@ import requests
 
 from web_scraper import _fetch_page, HEADERS_PC
 
-_PLACES_TEXTSEARCH_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-_PLACES_DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
+_PLACES_SEARCHTEXT_URL = "https://places.googleapis.com/v1/places:searchText"
+_PLACES_DETAILS_URL = "https://places.googleapis.com/v1/places/{place_id}"
 
 _SNS_DOMAINS = {
     "instagram.com": "Instagram",
@@ -22,38 +22,43 @@ _SNS_DOMAINS = {
 
 
 def search_places(query: str, api_key: str, max_results: int = 20) -> list[dict]:
-    """Google Places API (Text Search) で店舗候補を検索する。
+    """Google Places API (New) の Text Search で店舗候補を検索する。
     Returns: [{"place_id": str, "name": str, "address": str}, ...]
     """
     results = []
-    params = {"query": query, "key": api_key, "language": "ja", "region": "jp"}
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": api_key,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,nextPageToken",
+    }
+    body = {"textQuery": query, "languageCode": "ja", "regionCode": "JP"}
     next_token = None
 
     while len(results) < max_results:
         if next_token:
-            params = {"pagetoken": next_token, "key": api_key}
-            time.sleep(2)  # next_page_token はすぐには有効にならないため待機
+            body = {"textQuery": query, "languageCode": "ja", "regionCode": "JP", "pageToken": next_token}
+            time.sleep(2)  # pageToken はすぐには有効にならないため待機
 
         try:
-            resp = requests.get(_PLACES_TEXTSEARCH_URL, params=params, timeout=15)
+            resp = requests.post(_PLACES_SEARCHTEXT_URL, json=body, headers=headers, timeout=15)
             data = resp.json()
         except Exception as e:
             raise RuntimeError(f"Google Places API 接続エラー: {e}") from e
 
-        status = data.get("status")
-        if status not in ("OK", "ZERO_RESULTS"):
-            raise RuntimeError(f"Google Places API エラー: {status} / {data.get('error_message', '')}")
+        if resp.status_code != 200:
+            err = data.get("error", {})
+            raise RuntimeError(f"Google Places API エラー: {err.get('status', resp.status_code)} / {err.get('message', '')}")
 
-        for place in data.get("results", []):
+        for place in data.get("places", []):
             results.append({
-                "place_id": place.get("place_id", ""),
-                "name": place.get("name", ""),
-                "address": place.get("formatted_address", ""),
+                "place_id": place.get("id", ""),
+                "name": place.get("displayName", {}).get("text", ""),
+                "address": place.get("formattedAddress", ""),
             })
             if len(results) >= max_results:
                 break
 
-        next_token = data.get("next_page_token")
+        next_token = data.get("nextPageToken")
         if not next_token:
             break
 
@@ -61,24 +66,21 @@ def search_places(query: str, api_key: str, max_results: int = 20) -> list[dict]
 
 
 def get_place_details(place_id: str, api_key: str) -> dict:
-    """Place Details API で電話番号・ホームページURLを取得する。"""
-    params = {
-        "place_id": place_id,
-        "fields": "name,formatted_phone_number,website,formatted_address",
-        "key": api_key,
-        "language": "ja",
+    """Place Details API (New) で電話番号・ホームページURLを取得する。"""
+    headers = {
+        "X-Goog-Api-Key": api_key,
+        "X-Goog-FieldMask": "internationalPhoneNumber,nationalPhoneNumber,websiteUri",
     }
     try:
-        resp = requests.get(_PLACES_DETAILS_URL, params=params, timeout=15)
+        resp = requests.get(_PLACES_DETAILS_URL.format(place_id=place_id), headers=headers, timeout=15)
         data = resp.json()
     except Exception:
         return {}
-    if data.get("status") != "OK":
+    if resp.status_code != 200:
         return {}
-    r = data.get("result", {})
     return {
-        "phone": r.get("formatted_phone_number", ""),
-        "website": r.get("website", ""),
+        "phone": data.get("nationalPhoneNumber", "") or data.get("internationalPhoneNumber", ""),
+        "website": data.get("websiteUri", ""),
     }
 
 
