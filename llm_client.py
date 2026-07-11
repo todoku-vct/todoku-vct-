@@ -278,3 +278,18 @@ def generate_consultation_script(
     )
     text = _call_claude(SMART_MODEL, prompt, max_tokens=8000)
     return _extract_json(text)
+
+
+def extract_representative_name(page_text: str, profession: str) -> str:
+    """サイト本文から代表者・院長等の氏名をAIで抽出する（リストアップツール用）。"""
+    prompt_template = _load_prompt("representative_name_prompt.txt")
+    prompt = _format_prompt(
+        prompt_template,
+        profession=profession,
+        page_text=page_text[:3000],
+    )
+    text = _call_claude(FAST_MODEL, prompt, max_tokens=100)
+    name = text.strip()
+    if not name or "不明" in name:
+        return ""
+    return name.split("\n")[0].strip()

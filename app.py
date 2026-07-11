@@ -1,6 +1,8 @@
 # v2026-06-26c
 import json
+import os
 from datetime import datetime
+import pandas as pd
 import streamlit as st
 from persona_generator import (
     generate_personas,
@@ -11,7 +13,8 @@ from web_scraper import scrape_site, extract_emails_from_pages
 from email_sender import send_report as send_email_report, is_configured as email_is_configured
 from db import save_result, load_history, load_detail, load_client_names, delete_record
 from pdf_generator import generate_pdf, generate_ab_pdf, generate_site_pdf, generate_summary_pdf, generate_script_pdf
-from llm_client import generate_consultation_script, generate_ai_personas, compare_device_reports
+from llm_client import generate_consultation_script, generate_ai_personas, compare_device_reports, extract_representative_name
+from lead_finder import build_lead_list
 
 st.set_page_config(page_title="トドク VCT", page_icon="🏛", layout="wide")
 
@@ -483,7 +486,7 @@ def _mi_html(mi, margin_top="0.7rem"):
 </div>"""
 
 # ===== タブ =====
-tab_site, tab_test, tab_history = st.tabs(["🌐 サイト全体分析", "テスト実行", "履歴・トラッキング"])
+tab_site, tab_leads, tab_test, tab_history = st.tabs(["🌐 サイト全体分析", "🎯 リストアップ", "テスト実行", "履歴・トラッキング"])
 
 
 # =====================================================================
@@ -1389,6 +1392,88 @@ with tab_site:
                         st.success(f"✅ {to_email} に送信しました！")
                     else:
                         st.error(f"送信に失敗しました。\n{err}")
+
+
+# =====================================================================
+# TAB: リストアップ（DM送付先候補の収集）
+# =====================================================================
+with tab_leads:
+    st.subheader("🎯 DM送付先リストアップ")
+    st.caption("業種・地域からGoogle Places APIで候補店舗を検索し、店名・住所・電話番号・ホームページURL・代表者名・SNSを一覧化します。")
+
+    google_api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+    if not google_api_key:
+        st.warning(
+            "💡 **利用の準備方法**\n\n"
+            "Google Cloud Platformで「Places API」を有効化し、APIキーを発行してください。\n"
+            "`.env`（Streamlit Cloudの場合はSecrets）に以下を追加すると使えます：\n\n"
+            "```\nGOOGLE_PLACES_API_KEY=発行したAPIキー\n```"
+        )
+
+    col_l1, col_l2 = st.columns(2)
+    with col_l1:
+        lead_all_professions = [p for group in PROFESSION_GROUPS.values() for p in group]
+        lead_profession_raw = st.selectbox("業種", lead_all_professions, key="lead_profession")
+        lead_custom_service = ""
+        if lead_profession_raw == "カスタム（自由入力）":
+            lead_custom_service = st.text_input("業種名（自由入力）", placeholder="例：皮膚科", key="lead_custom")
+        lead_profession = lead_custom_service if lead_custom_service else lead_profession_raw
+    with col_l2:
+        lead_region = st.text_input("地域", placeholder="例：東京都渋谷区", key="lead_region")
+
+    col_l3, col_l4 = st.columns(2)
+    with col_l3:
+        lead_max = st.slider("最大取得件数", min_value=5, max_value=60, value=20, step=5, key="lead_max")
+    with col_l4:
+        lead_extract_name = st.toggle("代表者名も推定する（AI・時間がかかります）", value=True, key="lead_extract_name")
+
+    lead_btn = st.button("🔍 検索する", type="primary", use_container_width=True, disabled=not google_api_key)
+
+    if lead_btn:
+        if not lead_region.strip():
+            st.error("地域を入力してください。")
+        else:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            def _lead_progress(done, total, name):
+                progress_bar.progress(min(done / total, 1.0) if total else 0)
+                status_text.text(f"取得中 ({done}/{total}): {name}")
+
+            with st.spinner("店舗情報を検索中..."):
+                try:
+                    leads = build_lead_list(
+                        profession=lead_profession,
+                        region=lead_region.strip(),
+                        api_key=google_api_key,
+                        max_results=lead_max,
+                        progress_cb=_lead_progress,
+                        extract_representative_name_fn=extract_representative_name if lead_extract_name else None,
+                    )
+                    st.session_state["lead_list"] = leads
+                except Exception as e:
+                    st.error(f"検索に失敗しました: {e}")
+                    leads = None
+
+            progress_bar.progress(1.0)
+            status_text.empty()
+
+            if leads is not None:
+                st.success(f"{len(leads)}件の候補が見つかりました。")
+
+    if "lead_list" in st.session_state and st.session_state["lead_list"]:
+        leads = st.session_state["lead_list"]
+        df_leads = pd.DataFrame(leads)
+        st.dataframe(df_leads, use_container_width=True)
+
+        csv_bytes = df_leads.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            "📄 CSVでダウンロード",
+            data=csv_bytes,
+            file_name=f"リストアップ_{st.session_state.get('lead_profession','')}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
 
 
 # =====================================================================
