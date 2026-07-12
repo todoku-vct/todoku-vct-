@@ -115,10 +115,23 @@ textarea:focus, input:focus {
     border-radius: 8px !important;
 }
 
-/* ── スライダー ──────────────────────────── */
-[data-testid="stSlider"] > div > div > div { background: #e7e5e4 !important; }
-[data-testid="stSlider"] > div > div > div > div { background: linear-gradient(90deg,#1a1a3e,#44403c) !important; }
-[data-testid="stSlider"] [data-testid="stThumbValue"] { color: #1a1a3e !important; font-weight: 700 !important; }
+/* ── スライダー（Streamlitバージョン差異でDOM構造が変わっても効くよう、
+   直下子(>)ではなく子孫セレクタ＋新旧testid両対応にする） ── */
+[data-testid="stSlider"] [data-baseweb="slider"] > div > div:last-child {
+    background: linear-gradient(90deg,#1a1a3e,#44403c) !important;
+    background-image: linear-gradient(90deg,#1a1a3e,#44403c) !important;
+}
+[data-testid="stSlider"] [role="slider"] {
+    background-color: #1a1a3e !important;
+    border-color: #1a1a3e !important;
+    box-shadow: 0 0 0 3px rgba(26,26,62,0.18) !important;
+}
+[data-testid="stSlider"] [data-testid="stThumbValue"],
+[data-testid="stSlider"] [data-testid="stSliderThumbValue"] { color: #1a1a3e !important; font-weight: 700 !important; }
+[data-testid="stSlider"] [data-testid="stTickBarMin"],
+[data-testid="stSlider"] [data-testid="stTickBarMax"],
+[data-testid="stSlider"] [data-testid="stSliderTickBarMin"],
+[data-testid="stSlider"] [data-testid="stSliderTickBarMax"] { color: #78716c !important; }
 
 /* ── ラジオ・チェック・トグル ──────────── */
 [data-testid="stRadio"] label,
