@@ -1401,7 +1401,10 @@ with tab_leads:
     st.subheader("🎯 DM送付先リストアップ")
     st.caption("業種・地域からGoogle Places APIで候補店舗を検索し、店名・住所・電話番号・ホームページURL・代表者名・SNSを一覧化します。")
 
-    google_api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+    google_api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "").strip()
+    if google_api_key and not google_api_key.isascii():
+        st.error("GOOGLE_PLACES_API_KEY に日本語や全角文字など、キーとして不正な文字が含まれています。Secretsの値を貼り直してください。")
+        google_api_key = ""
     if not google_api_key:
         st.warning(
             "💡 **利用の準備方法**\n\n"

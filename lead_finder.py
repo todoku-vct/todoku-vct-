@@ -25,6 +25,10 @@ def search_places(query: str, api_key: str, max_results: int = 20) -> list[dict]
     """Google Places API (New) の Text Search で店舗候補を検索する。
     Returns: [{"place_id": str, "name": str, "address": str}, ...]
     """
+    api_key = api_key.strip()
+    if not api_key.isascii():
+        raise RuntimeError("APIキーに不正な文字（全角文字・改行等）が含まれています。Secretsの値を確認してください。")
+
     results = []
     headers = {
         "Content-Type": "application/json",
