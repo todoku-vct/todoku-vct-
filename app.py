@@ -1433,6 +1433,13 @@ with tab_leads:
         with col_e2:
             edinet_region = st.text_input("所在地キーワード（部分一致・空欄で全国）", placeholder="例：東京都、大阪市", key="edinet_region")
 
+        edinet_keyword = st.text_input(
+            "絞り込みキーワード（社名に含む文字・任意）",
+            placeholder="例：ソフト、広告、通信 など業種のさらに細かい絞り込みに",
+            key="edinet_keyword",
+            help="EDINETデータには業種のサブカテゴリ（例：情報・通信業→ソフトウェア／広告／通信キャリア）が含まれないため、社名に含まれる文字での簡易絞り込みです。",
+        )
+
         edinet_max = st.slider("最大取得件数", min_value=5, max_value=100, value=20, step=5, key="edinet_max")
 
         edinet_btn = st.button("🔍 検索する", type="primary", use_container_width=True, key="edinet_search_btn")
@@ -1443,6 +1450,7 @@ with tab_leads:
                     edinet_leads = search_edinet_companies(
                         industry=edinet_industry,
                         region_keyword=edinet_region,
+                        name_keyword=edinet_keyword,
                         max_results=edinet_max,
                     )
                     st.session_state["edinet_lead_list"] = edinet_leads

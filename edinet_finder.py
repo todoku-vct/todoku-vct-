@@ -65,10 +65,13 @@ def load_codelist(force_refresh: bool = False) -> pd.DataFrame:
 def search_edinet_companies(
     industry: str,
     region_keyword: str = "",
+    name_keyword: str = "",
     max_results: int = 20,
     listed_only: bool = True,
 ) -> list[dict]:
-    """業種・地域（所在地の部分一致）で上場企業を検索する。
+    """業種・地域（所在地の部分一致）・社名キーワードで上場企業を検索する。
+    EDINETコードリストには業種の下位区分（例：情報・通信業→ソフトウェア等）や事業内容テキストが
+    含まれないため、name_keyword は社名に対する部分一致でさらに絞り込む簡易的な代替手段。
     Returns: [{"企業名": str, "業種": str, "所在地": str, "証券コード": str, "EDINETコード": str}, ...]
     """
     df = load_codelist()
@@ -81,6 +84,9 @@ def search_edinet_companies(
 
     if region_keyword.strip():
         df = df[df["address"].astype(str).str.contains(region_keyword.strip(), na=False)]
+
+    if name_keyword.strip():
+        df = df[df["company_name"].astype(str).str.contains(name_keyword.strip(), na=False, case=False)]
 
     df = df.head(max_results)
 
