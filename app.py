@@ -15,6 +15,7 @@ from db import save_result, load_history, load_detail, load_client_names, delete
 from pdf_generator import generate_pdf, generate_ab_pdf, generate_site_pdf, generate_summary_pdf, generate_script_pdf
 from llm_client import generate_consultation_script, generate_ai_personas, compare_device_reports, extract_representative_name
 from lead_finder import build_lead_list
+from edinet_finder import search_edinet_companies, EDINET_INDUSTRIES
 
 st.set_page_config(page_title="トドク VCT", page_icon="🏛", layout="wide")
 
@@ -1412,84 +1413,141 @@ with tab_site:
 # =====================================================================
 with tab_leads:
     st.subheader("🎯 DM送付先リストアップ")
-    st.caption("業種・地域からGoogle Places APIで候補店舗を検索し、店名・住所・電話番号・ホームページURL・代表者名・SNSを一覧化します。")
 
-    google_api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "").strip()
-    if google_api_key and not google_api_key.isascii():
-        st.error("GOOGLE_PLACES_API_KEY に日本語や全角文字など、キーとして不正な文字が含まれています。Secretsの値を貼り直してください。")
-        google_api_key = ""
-    if not google_api_key:
-        st.warning(
-            "💡 **利用の準備方法**\n\n"
-            "Google Cloud Platformで「Places API」を有効化し、APIキーを発行してください。\n"
-            "`.env`（Streamlit Cloudの場合はSecrets）に以下を追加すると使えます：\n\n"
-            "```\nGOOGLE_PLACES_API_KEY=発行したAPIキー\n```"
+    lead_source = st.radio(
+        "検索方法",
+        ["🗺️ Google Map検索（店舗・中小企業向け）", "📊 四季報掲載企業（上場企業・EDINETデータ）"],
+        horizontal=True,
+        key="lead_source",
+    )
+
+    if lead_source.startswith("📊"):
+        st.caption(
+            "会社四季報の掲載対象はほぼ全上場企業のため、金融庁EDINETの無料公開データ（EDINETコード一覧）で代替検索します。"
+            "業種は東証33業種分類（四季報と同じ分類）です。"
         )
 
-    col_l1, col_l2 = st.columns(2)
-    with col_l1:
-        lead_all_professions = [p for group in PROFESSION_GROUPS.values() for p in group]
-        lead_profession_raw = st.selectbox("業種", lead_all_professions, key="lead_profession")
-        lead_custom_service = ""
-        if lead_profession_raw == "カスタム（自由入力）":
-            lead_custom_service = st.text_input("業種名（自由入力）", placeholder="例：皮膚科", key="lead_custom")
-        lead_profession = lead_custom_service if lead_custom_service else lead_profession_raw
-    with col_l2:
-        lead_region = st.text_input("地域", placeholder="例：東京都渋谷区", key="lead_region")
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            edinet_industry = st.selectbox("業種", EDINET_INDUSTRIES, key="edinet_industry")
+        with col_e2:
+            edinet_region = st.text_input("所在地キーワード（部分一致・空欄で全国）", placeholder="例：東京都、大阪市", key="edinet_region")
 
-    col_l3, col_l4 = st.columns(2)
-    with col_l3:
-        lead_max = st.slider("最大取得件数", min_value=5, max_value=60, value=20, step=5, key="lead_max")
-    with col_l4:
-        lead_extract_name = st.toggle("代表者名も推定する（AI・時間がかかります）", value=True, key="lead_extract_name")
+        edinet_max = st.slider("最大取得件数", min_value=5, max_value=100, value=20, step=5, key="edinet_max")
 
-    lead_btn = st.button("🔍 検索する", type="primary", use_container_width=True, disabled=not google_api_key)
+        edinet_btn = st.button("🔍 検索する", type="primary", use_container_width=True, key="edinet_search_btn")
 
-    if lead_btn:
-        if not lead_region.strip():
-            st.error("地域を入力してください。")
-        else:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-
-            def _lead_progress(done, total, name):
-                progress_bar.progress(min(done / total, 1.0) if total else 0)
-                status_text.text(f"取得中 ({done}/{total}): {name}")
-
-            with st.spinner("店舗情報を検索中..."):
+        if edinet_btn:
+            with st.spinner("EDINETコードリストを検索中..."):
                 try:
-                    leads = build_lead_list(
-                        profession=lead_profession,
-                        region=lead_region.strip(),
-                        api_key=google_api_key,
-                        max_results=lead_max,
-                        progress_cb=_lead_progress,
-                        extract_representative_name_fn=extract_representative_name if lead_extract_name else None,
+                    edinet_leads = search_edinet_companies(
+                        industry=edinet_industry,
+                        region_keyword=edinet_region,
+                        max_results=edinet_max,
                     )
-                    st.session_state["lead_list"] = leads
+                    st.session_state["edinet_lead_list"] = edinet_leads
                 except Exception as e:
                     st.error(f"検索に失敗しました: {e}")
-                    leads = None
+                    edinet_leads = None
 
-            progress_bar.progress(1.0)
-            status_text.empty()
+            if edinet_leads is not None:
+                st.success(f"{len(edinet_leads)}件の上場企業が見つかりました。")
 
-            if leads is not None:
-                st.success(f"{len(leads)}件の候補が見つかりました。")
+        if "edinet_lead_list" in st.session_state and st.session_state["edinet_lead_list"]:
+            edinet_leads = st.session_state["edinet_lead_list"]
+            df_edinet = pd.DataFrame(edinet_leads)
+            st.dataframe(df_edinet, use_container_width=True)
 
-    if "lead_list" in st.session_state and st.session_state["lead_list"]:
-        leads = st.session_state["lead_list"]
-        df_leads = pd.DataFrame(leads)
-        st.dataframe(df_leads, use_container_width=True)
+            csv_bytes = df_edinet.to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                "📄 CSVでダウンロード",
+                data=csv_bytes,
+                file_name=f"四季報リストアップ_{st.session_state.get('edinet_industry','')}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="edinet_csv_download",
+            )
 
-        csv_bytes = df_leads.to_csv(index=False).encode("utf-8-sig")
-        st.download_button(
-            "📄 CSVでダウンロード",
-            data=csv_bytes,
-            file_name=f"リストアップ_{st.session_state.get('lead_profession','')}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
+    else:
+        st.caption("業種・地域からGoogle Places APIで候補店舗を検索し、店名・住所・電話番号・ホームページURL・代表者名・SNSを一覧化します。")
+
+        google_api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "").strip()
+        if google_api_key and not google_api_key.isascii():
+            st.error("GOOGLE_PLACES_API_KEY に日本語や全角文字など、キーとして不正な文字が含まれています。Secretsの値を貼り直してください。")
+            google_api_key = ""
+        if not google_api_key:
+            st.warning(
+                "💡 **利用の準備方法**\n\n"
+                "Google Cloud Platformで「Places API」を有効化し、APIキーを発行してください。\n"
+                "`.env`（Streamlit Cloudの場合はSecrets）に以下を追加すると使えます：\n\n"
+                "```\nGOOGLE_PLACES_API_KEY=発行したAPIキー\n```"
+            )
+
+        col_l1, col_l2 = st.columns(2)
+        with col_l1:
+            lead_all_professions = [p for group in PROFESSION_GROUPS.values() for p in group]
+            lead_profession_raw = st.selectbox("業種", lead_all_professions, key="lead_profession")
+            lead_custom_service = ""
+            if lead_profession_raw == "カスタム（自由入力）":
+                lead_custom_service = st.text_input("業種名（自由入力）", placeholder="例：皮膚科", key="lead_custom")
+            lead_profession = lead_custom_service if lead_custom_service else lead_profession_raw
+        with col_l2:
+            lead_region = st.text_input("地域", placeholder="例：東京都渋谷区", key="lead_region")
+
+        col_l3, col_l4 = st.columns(2)
+        with col_l3:
+            lead_max = st.slider("最大取得件数", min_value=5, max_value=60, value=20, step=5, key="lead_max")
+        with col_l4:
+            lead_extract_name = st.toggle("代表者名も推定する（AI・時間がかかります）", value=True, key="lead_extract_name")
+
+        lead_btn = st.button("🔍 検索する", type="primary", use_container_width=True, disabled=not google_api_key, key="lead_search_btn")
+
+        if lead_btn:
+            if not lead_region.strip():
+                st.error("地域を入力してください。")
+            else:
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+
+                def _lead_progress(done, total, name):
+                    progress_bar.progress(min(done / total, 1.0) if total else 0)
+                    status_text.text(f"取得中 ({done}/{total}): {name}")
+
+                with st.spinner("店舗情報を検索中..."):
+                    try:
+                        leads = build_lead_list(
+                            profession=lead_profession,
+                            region=lead_region.strip(),
+                            api_key=google_api_key,
+                            max_results=lead_max,
+                            progress_cb=_lead_progress,
+                            extract_representative_name_fn=extract_representative_name if lead_extract_name else None,
+                        )
+                        st.session_state["lead_list"] = leads
+                    except Exception as e:
+                        st.error(f"検索に失敗しました: {e}")
+                        leads = None
+
+                progress_bar.progress(1.0)
+                status_text.empty()
+
+                if leads is not None:
+                    st.success(f"{len(leads)}件の候補が見つかりました。")
+
+        if "lead_list" in st.session_state and st.session_state["lead_list"]:
+            leads = st.session_state["lead_list"]
+            df_leads = pd.DataFrame(leads)
+            st.dataframe(df_leads, use_container_width=True)
+
+            csv_bytes = df_leads.to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                "📄 CSVでダウンロード",
+                data=csv_bytes,
+                file_name=f"リストアップ_{st.session_state.get('lead_profession','')}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="lead_csv_download",
+            )
 
 
 # =====================================================================

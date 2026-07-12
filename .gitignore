@@ -8,6 +8,9 @@ img_test.pdf
 # データベース（ローカルの履歴）
 data/history.db
 
+# EDINETコード一覧キャッシュ（月次更新・自動再ダウンロードされる）
+data/edinet_codelist_cache.csv
+
 # Pythonキャッシュ
 __pycache__/
 *.pyc
