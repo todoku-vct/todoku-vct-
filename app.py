@@ -1545,7 +1545,16 @@ with tab_leads:
         if "lead_list" in st.session_state and st.session_state["lead_list"]:
             leads = st.session_state["lead_list"]
             df_leads = pd.DataFrame(leads)
-            st.dataframe(df_leads, use_container_width=True)
+            st.dataframe(
+                df_leads,
+                use_container_width=True,
+                column_config={
+                    "ホームページURL": st.column_config.LinkColumn(
+                        "ホームページURL",
+                        display_text="開く",
+                    ),
+                },
+            )
 
             csv_bytes = df_leads.to_csv(index=False).encode("utf-8-sig")
             st.download_button(
